@@ -1039,7 +1039,7 @@ impl Card {
 
     #[cfg(feature = "custom")]
     fn dfc_symbol_custom(&self) -> DfcSymbol {
-        match self.json_data["setCode"].as_str().expect("setCode is not a string") {
+        match self.json_data()["setCode"].as_str().expect("setCode is not a string") {
             "VLN" => DfcSymbol::Spark,
             "TSL" => DfcSymbol::Chalice,
             set => self.dfc_symbol()
