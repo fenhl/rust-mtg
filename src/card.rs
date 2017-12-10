@@ -1,9 +1,12 @@
 //! Contains the `Card` type, which represents a *Magic* card.
 
-use std::fmt;
+use std::{fmt, io};
 use std::cmp::Ordering;
-use std::collections::BTreeMap;
+use std::collections::btree_map::{self, BTreeMap};
+use std::ffi::OsString;
+use std::fs::{self, File};
 use std::hash::{Hash, Hasher};
+use std::path::Path;
 use std::str::FromStr;
 
 use num::{BigInt, BigUint};
@@ -29,10 +32,26 @@ pub struct Db {
 pub enum DbError {
     /// The MTG JSON download failed
     Download(::reqwest::Error),
-    /// The MTG JSON was not in the expected format
-    Parse,
+    /// The filename of a set file could not be read
+    Filename(OsString),
+    /// An I/O error occurred while trying to read a database
+    Io(io::Error),
     /// The downloaded file was not valid JSON
-    Json(::serde_json::Error)
+    Json(::serde_json::Error),
+    /// The MTG JSON was not in the expected format
+    Parse
+}
+
+impl From<OsString> for DbError {
+    fn from(e: OsString) -> DbError {
+        DbError::Filename(e)
+    }
+}
+
+impl From<io::Error> for DbError {
+    fn from(e: io::Error) -> DbError {
+        DbError::Io(e)
+    }
 }
 
 impl From<::reqwest::Error> for DbError {
@@ -65,6 +84,20 @@ impl Db {
         let sets = if let Some(sets) = json.as_object() { sets } else { return Err(DbError::Parse); };
         for (set_code, set) in sets {
             db.register_set(set_code, set)?;
+        }
+        Ok(db)
+    }
+
+    /// Creates a card database from a directory of MTG JSON set files.
+    pub fn from_sets_dir<P: AsRef<Path>>(path: P) -> Result<Db, DbError> {
+        let mut db = Db::empty();
+        for entry in fs::read_dir(path)? {
+            let entry = entry?;
+            let set_code = entry.file_name().into_string()?;
+            if !set_code.ends_with(".json") { continue; }
+            let mut set_file = File::open(entry.path())?;
+            let set = ::serde_json::from_reader(&mut set_file)?;
+            db.register_set(&set_code[..set_code.len() - 5], &set)?;
         }
         Ok(db)
     }
@@ -105,6 +138,27 @@ impl Db {
                 .push(card.to_owned());
         }
         Ok(())
+    }
+}
+
+impl<'a> IntoIterator for &'a Db {
+    type Item = Card;
+    type IntoIter = Iter<'a>;
+
+    fn into_iter(self) -> Iter<'a> {
+        Iter(self.cards.values())
+    }
+}
+
+/// Iterates over all cards in a `Db` alphabetically.
+#[derive(Debug)]
+pub struct Iter<'a>(btree_map::Values<'a, String, Vec<Obj>>);
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = Card;
+
+    fn next(&mut self) -> Option<Card> {
+        self.0.next().map(|printings| Card { printings: printings.clone() })
     }
 }
 
