@@ -1,0 +1,17 @@
+[package]
+name = "mtg"
+version = "0.1.0"
+authors = ["Fenhl <fenhl@fenhl.net>"]
+
+[features]
+custom = []
+
+[dependencies]
+num = "*"
+regex = "*"
+reqwest = "*"
+serde = "*"
+serde_derive = "*"
+serde_json = "*"
+topological-sort = "*"
+wrapped_enum = "*"
