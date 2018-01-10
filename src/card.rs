@@ -38,8 +38,13 @@ pub enum DbError {
     Io(io::Error),
     /// The downloaded file was not valid JSON
     Json(::serde_json::Error),
-    /// The MTG JSON was not in the expected format
-    Parse
+    /// The JSON root element was not an object
+    NotAnObject,
+    /// The set data was not in the expected format
+    ParseSet {
+        /// The set code of the set where the error occurred
+        set_code: String
+    }
 }
 
 impl From<OsString> for DbError {
@@ -81,7 +86,7 @@ impl Db {
     /// Parses a JSON object structured like AllSets.json into a card database.
     pub fn from_mtg_json(json: Json) -> Result<Db, DbError> {
         let mut db = Db::empty();
-        let sets = if let Some(sets) = json.as_object() { sets } else { return Err(DbError::Parse); };
+        let sets = if let Some(sets) = json.as_object() { sets } else { return Err(DbError::NotAnObject); };
         for (set_code, set) in sets {
             db.register_set(set_code, set)?;
         }
@@ -110,29 +115,29 @@ impl Db {
     }
 
     fn register_set(&mut self, set_code: &str, set: &Json) -> Result<(), DbError> {
-        let set = if let Some(set) = set.as_object() { set } else { return Err(DbError::Parse); };
-        let set_border = if let Some(border) = set.get("border").and_then(|border| border.as_str()) { border } else { return Err(DbError::Parse); };
-        let set_cards = if let Some(cards) = set.get("cards").and_then(|cards| cards.as_array()) { cards } else { return Err(DbError::Parse); };
-        let set_release_date = if let Some(date) = set.get("releaseDate") { date } else { return Err(DbError::Parse); };
+        let set = if let Some(set) = set.as_object() { set } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
+        let set_border = if let Some(border) = set.get("border").and_then(|border| border.as_str()) { border } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
+        let set_cards = if let Some(cards) = set.get("cards").and_then(|cards| cards.as_array()) { cards } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
+        let set_release_date = if let Some(date) = set.get("releaseDate") { date } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
         for mut card in set_cards.into_iter().cloned() {
-            let card = if let Some(card) = card.as_object_mut() { card } else { return Err(DbError::Parse); };
+            let card = if let Some(card) = card.as_object_mut() { card } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
             match card.get("border").map_or(Some(set_border), |border| border.as_str()) {
                 Some("silver") => { continue; } // silver-bordered card
                 Some(_) => {}
-                None => { return Err(DbError::Parse); }
+                None => { return Err(DbError::ParseSet { set_code: set_code.into() }); }
             }
             match card.get("layout").and_then(|layout| layout.as_str()) {
                 Some("token") => { continue; } // token card, don't include
                 Some(_) => {}
-                None => { return Err(DbError::Parse); }
+                None => { return Err(DbError::ParseSet { set_code: set_code.into() }); }
             }
             match card.get("name").and_then(|name| name.as_str()) {
                 Some(name) => if ["1996 World Champion", "Fraternal Exaltation", "Proposal", "Robot Chicken", "Shichifukujin Dragon", "Splendid Genesis"].contains(&name) { continue; } // black-bordered, but not legal in any format
-                None => { return Err(DbError::Parse); }
+                None => { return Err(DbError::ParseSet { set_code: set_code.into() }); }
             }
             card.entry("releaseDate".to_owned()).or_insert(set_release_date.clone());
             card.insert("setCode".into(), json!(set_code));
-            let card_name = if let Some(name) = card.get("name").and_then(|name| name.as_str()) { name.to_owned() } else { return Err(DbError::Parse); };
+            let card_name = if let Some(name) = card.get("name").and_then(|name| name.as_str()) { name.to_owned() } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
             self.cards.entry(card_name)
                 .or_insert_with(Vec::default)
                 .push(card.to_owned());
