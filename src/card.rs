@@ -596,6 +596,7 @@ pub enum KeywordAbility {
     Eternalize(Cost),
     /// afflict N
     Afflict(Number),
+    Ascend,
     #[cfg(feature = "custom")]
     /// resonance [cost]
     Resonance(Cost),
@@ -629,7 +630,12 @@ pub enum KeywordAbility {
     Invocation,
     #[cfg(feature = "custom")]
     /// resurrect [cost]
-    Resurrect(Cost)
+    Resurrect(Cost),
+    #[cfg(feature = "custom")]
+    Desperation,
+    #[cfg(feature = "custom")]
+    /// hollow [cost]
+    Hollow(Cost)
 }
 
 macro_rules! keyword_from_str {

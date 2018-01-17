@@ -741,6 +741,8 @@ type_enum! {
     pub enum PlaneswalkerType {
         /// Ajani
         Ajani("Ajani"),
+        /// Angrath
+        Angrath("Angrath"),
         /// Arlinn
         Arlinn("Arlinn"),
         /// Ashiok
@@ -828,6 +830,8 @@ type_enum! {
         Gozani("Gozani"),
         /// Hohoja
         Hohoja("Hohoja"),
+        /// Patches
+        Patches("Patches"),
         /// Roselyn
         Roselyn("Roselyn"),
         /// Sobki
