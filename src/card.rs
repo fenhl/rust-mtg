@@ -2,6 +2,7 @@
 
 use std::{fmt, io};
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::collections::btree_map::{self, BTreeMap};
 use std::ffi::OsString;
 use std::fs::{self, File};
@@ -24,7 +25,8 @@ type Obj = ::serde_json::Map<String, Json>;
 
 /// A database of cards.
 pub struct Db {
-    cards: BTreeMap<String, Vec<Obj>>
+    cards: BTreeMap<String, Vec<Obj>>,
+    set_codes: HashSet<String>
 }
 
 /// The JSON was not a valid MTG JSON database.
@@ -80,7 +82,10 @@ impl Db {
 
     /// Returns a database without any cards in it.
     pub fn empty() -> Db {
-        Db { cards: BTreeMap::default() }
+        Db {
+            cards: BTreeMap::default(),
+            set_codes: HashSet::default()
+        }
     }
 
     /// Parses a JSON object structured like AllSets.json into a card database.
@@ -109,9 +114,38 @@ impl Db {
 
     /// Returns a card when given its exact name.
     ///
-    /// Returns `Err` with a copy of the given string when no card with that name is in the database. Combined names like `Wear // Tear` are not accepted.
+    /// Combined names like `Wear // Tear` are not accepted.
     pub fn card(&self, card_name: &str) -> Option<Card> {
         self.cards.get(card_name).map(|printings| Card { printings: printings.clone() }) //TODO use a reference instead?
+    }
+
+    /// Returns cards whose name is similar to the `search_term` parameter. This tries the following matching algorithms, in order:
+    ///
+    /// * Exact match
+    /// * **(not implemented)** Initials (e.g. BoP for Birds of Paradise)
+    /// * **(not implemented)** Card names starting with the search term, with a preference for cards with fewer apostrophes in their names (so that a legend is preferred over cards using the legend's name)
+    /// * **(not implemented)** Card names ending with the search term
+    /// * **(not implemented)** Card names containing the search term
+    /// * **(not implemented)** Card names containing each word in the search term
+    /// * **(not implemented)** Card names with the lowest [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance) to the search term
+    ///
+    /// All matching algorithms are case-sensitive. This may be changed in the future.
+    ///
+    /// If `set_code` is given, the search is restricted to that set.
+    pub fn card_fuzzy(&self, search_term: &str, set_code: Option<&str>) -> Vec<Card> {
+        //TODO make all algorithms case-insensitive
+        // exact match
+        if let Some(card) = self.card(search_term) {
+            let matches_set = set_code.map_or(true, |set_code| card.printings().into_iter().any(|printing| &printing.set == set_code));
+            if matches_set { return vec![card]; }
+        }
+        //TODO initials
+        //TODO starts_with
+        //TODO ends_with
+        //TODO contains
+        //TODO contains all words
+        //TODO Levenshtein
+        Vec::default()
     }
 
     fn register_set(&mut self, set_code: &str, set: &Json) -> Result<(), DbError> {
@@ -142,7 +176,13 @@ impl Db {
                 .or_insert_with(Vec::default)
                 .push(card.to_owned());
         }
+        self.set_codes.insert(set_code.into());
         Ok(())
+    }
+
+    /// Returns the set codes of all sets in the database.
+    pub fn set_codes(&self) -> &HashSet<String> {
+        &self.set_codes
     }
 }
 
