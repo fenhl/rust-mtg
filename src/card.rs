@@ -272,6 +272,18 @@ impl Rarity {
             Rarity::Special => (144, 99, 156)
         }
     }
+
+    /// Returns a one-letter rarity abbreviation.
+    pub fn short(&self) -> char {
+        match *self {
+            Rarity::Land => 'L',
+            Rarity::Common => 'C',
+            Rarity::Uncommon => 'U',
+            Rarity::Rare => 'R',
+            Rarity::Mythic => 'M',
+            Rarity::Special => 'S'
+        }
+    }
 }
 
 /// A printed (or Magic-online-only “printed”) version of a card.
