@@ -686,6 +686,8 @@ type_enum! {
         Cartouche("Cartouche"),
         /// Curse
         Curse("Curse"),
+        /// Saga
+        Saga("Saga"),
         /// Shrine
         Shrine("Shrine")
     } part enchantment_types iter EnchantmentTypeIter
@@ -771,6 +773,8 @@ type_enum! {
         Huatli("Huatli"),
         /// Jace
         Jace("Jace"),
+        /// Jaya
+        Jaya("Jaya"),
         /// Karn
         Karn("Karn"),
         /// Kaya

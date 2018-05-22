@@ -421,14 +421,19 @@ pub enum KeywordAbility {
     DoubleStrike,
     /// enchant [object or player]
     Enchant(String),
-    /// equip [cost]
+    /// equip [cost] (regular equip)
     Equip(Cost),
+    /// equip [quality] creature [cost]
+    EquipQuality(String, Cost),
     /// first strike
     FirstStrike,
     Flash,
     Flying,
     Haste,
+    // regular hexproof
     Hexproof,
+    // hexproof from [quality]
+    HexproofFrom(String),
     Indestructible,
     Intimidate,
     /// [type]walk (landwalk)
@@ -776,6 +781,22 @@ macro_rules! keyword_from_str {
             return Some($variant($s[$str.len() + 1..].to_owned()));
         }
     };
+    (@$s:expr, (text_cost $str:expr => $variant:ident)) => {
+        if $s.to_lowercase().starts_with(concat!($str, ' ')) {
+            if let Some(dash_idx) = $s.find('—') {
+                let text = $s[$str.len() + 1..dash_idx].to_owned();
+                if let Ok(cost) = Cost::from_str(&$s[dash_idx + "—".len()..]) {
+                    return Some($variant(text, cost));
+                }
+            }
+            if let Some(space_idx) = $s[$str.len() + 1..].rfind(' ') {
+                let text = $s[$str.len() + 1..$str.len() + 1 + space_idx].to_owned();
+                if let Ok(cost) = Cost::from_str(&$s[$str.len() + 1 + space_idx + 1..]) {
+                    return Some($variant(text, cost));
+                }
+            }
+        }
+    };
     (@$s:expr, (typecycling => $variant:ident)) => {
         if let Some(cycling_idx) = $s.find("cycling ") {
             if let Ok(type_line) = TypeLine::from_str(&$s[..cycling_idx]) {
@@ -813,11 +834,13 @@ impl KeywordAbility {
             (plain "defender" => Defender),
             (plain "double strike" => DoubleStrike),
             (text "enchant" => Enchant),
+            (text_cost "equip" => EquipQuality),
             (cost "equip" => Equip),
             (plain "first strike" => FirstStrike),
             (plain "flash" => Flash),
             (plain "flying" => Flying),
             (plain "haste" => Haste),
+            (text "hexproof from" => HexproofFrom),
             (plain "hexproof" => Hexproof),
             (plain "indestructible" => Indestructible),
             (plain "intimidate" => Intimidate),
@@ -990,6 +1013,13 @@ impl FromStr for KeywordAbility {
 pub enum Ability {
     /// A keyword ability, with optional additional text.
     Keyword(KeywordAbility),
+    /// A chapter ability, typically found on a Saga card.
+    Chapter {
+        /// The chapter numbers that trigger this ability.
+        chapters: HashSet<u16>,
+        /// The trigger effect.
+        text: String
+    },
     /// The keyword ability represented by a level symbol.
     Level {
         /// The minimum level for this ability to be active.
@@ -1019,7 +1049,7 @@ impl FromStr for Ability {
 
     fn from_str(s: &str) -> Result<Ability, ()> {
         if let Ok(keyword) = KeywordAbility::from_str(s) { return Ok(Ability::Keyword(keyword)); }
-        //TODO level keyword, modal ability
+        //TODO chapter keyword, level keyword, modal ability
         Ok(Ability::Other(s.into()))
     }
 }
@@ -1201,7 +1231,7 @@ impl Card {
             Vec::default()
         };
         match self.json_data()["layout"].as_str().expect("card layout is not a string") {
-            "split" => Layout::Split { left: names[0].clone(), right: names[1].clone() },
+            "split" | "aftermath" => Layout::Split { left: names[0].clone(), right: names[1].clone() },
             "flip" => Layout::Flip { unflipped: names[0].clone(), flipped: names[1].clone() },
             "double-faced" => {
                 Layout::DoubleFaced {
