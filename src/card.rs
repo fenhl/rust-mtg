@@ -1302,7 +1302,14 @@ impl Card {
     }
 
     /// Returns all the different printings of the card, sorted chronologically if possible.
+    ///
+    /// Warning: this method may take a very long time to return for basic lands.
     pub fn printings(&self) -> impl IntoIterator<Item = Printing> {
+        self.printings_unsorted().into_iter().collect::<TopologicalSort<_>>()
+    }
+
+    /// Returns all the different printings of the card, in no particular order.
+    pub fn printings_unsorted(&self) -> Vec<Printing> {
         self.printings.iter().map(|printing_json| {
             let release_date_parts = printing_json["releaseDate"].as_str().expect("releaseDate is not a string").split('-').collect::<Vec<_>>();
             let (year, month, day) = match release_date_parts.len() {
@@ -1321,7 +1328,7 @@ impl Card {
                 },
                 rarity: ::serde_json::from_value(printing_json["rarity"].clone()).expect("failed to parse printing rarity")
             }
-        }).collect::<TopologicalSort<_>>()
+        }).collect()
     }
 
     /// Returns the card's printed power and toughness, if any.
