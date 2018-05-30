@@ -2,13 +2,26 @@
 //!
 //! This module contains the `ManaCost` type which represents a mana cost. Other costs are currently simply represented as strings.
 
-use std::{fmt, iter};
-use std::ops::{Add, AddAssign};
-use std::str::FromStr;
+use std::{
+    fmt,
+    iter,
+    ops::{
+        Add,
+        AddAssign
+    },
+    str::FromStr
+};
 
-use num::{BigUint, One, ToPrimitive};
+use num::{
+    BigUint,
+    One,
+    ToPrimitive
+};
 
-use color::{Color, ColorSet};
+use color::{
+    Color,
+    ColorSet
+};
 
 /// An error encountered while parsing a string into a `ManaCost`.
 #[derive(Debug)]

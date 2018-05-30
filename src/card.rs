@@ -1,16 +1,33 @@
 //! Contains the `Card` type, which represents a *Magic* card.
 
-use std::{fmt, io};
-use std::cmp::Ordering;
-use std::collections::HashSet;
-use std::collections::btree_map::{self, BTreeMap};
-use std::ffi::OsString;
-use std::fs::{self, File};
-use std::hash::{Hash, Hasher};
-use std::path::Path;
-use std::str::FromStr;
+use std::{
+    cmp::Ordering,
+    collections::{
+        HashSet,
+        btree_map::{
+            self,
+            BTreeMap
+        }
+    },
+    ffi::OsString,
+    fmt,
+    fs::{
+        self,
+        File
+    },
+    hash::{
+        Hash,
+        Hasher
+    },
+    io,
+    path::Path,
+    str::FromStr
+};
 
-use num::{BigInt, BigUint};
+use num::{
+    BigInt,
+    BigUint
+};
 
 use regex::Regex;
 
@@ -18,8 +35,17 @@ use serde_json::Value as Json;
 
 use topological_sort::TopologicalSort;
 
-use cardtype::{CardType, LandType, Subtype, Supertype, TypeLine};
-use cost::{Cost, ManaCost};
+use cardtype::{
+    CardType,
+    LandType,
+    Subtype,
+    Supertype,
+    TypeLine
+};
+use cost::{
+    Cost,
+    ManaCost
+};
 
 type Obj = ::serde_json::Map<String, Json>;
 
@@ -1276,7 +1302,7 @@ impl Card {
     }
 
     /// Returns all the different printings of the card, sorted chronologically if possible.
-    pub fn printings(&self) -> Vec<Printing> {
+    pub fn printings(&self) -> impl IntoIterator<Item = Printing> {
         self.printings.iter().map(|printing_json| {
             let release_date_parts = printing_json["releaseDate"].as_str().expect("releaseDate is not a string").split('-').collect::<Vec<_>>();
             let (year, month, day) = match release_date_parts.len() {
@@ -1295,7 +1321,7 @@ impl Card {
                 },
                 rarity: ::serde_json::from_value(printing_json["rarity"].clone()).expect("failed to parse printing rarity")
             }
-        }).collect::<TopologicalSort<_>>().collect()
+        }).collect::<TopologicalSort<_>>()
     }
 
     /// Returns the card's printed power and toughness, if any.

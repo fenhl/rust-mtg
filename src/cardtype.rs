@@ -1,12 +1,22 @@
 //! This module contains Rust types representing Magic card supertypes, types, and subtypes.
 
-use std::{fmt, iter, mem};
-use std::cmp::Ordering;
-use std::collections::HashSet;
-use std::ops::{BitOr, BitOrAssign};
-use std::str::FromStr;
+use std::{
+    cmp::Ordering,
+    collections::HashSet,
+    fmt,
+    iter,
+    mem,
+    ops::{
+        BitOr,
+        BitOrAssign
+    },
+    str::FromStr
+};
 
-use color::{Color, ColorSet};
+use color::{
+    Color,
+    ColorSet
+};
 
 /// An error encountered while parsing a string into a `TypeLine`.
 #[derive(Debug)]
