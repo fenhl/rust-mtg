@@ -1301,6 +1301,11 @@ impl Card {
         self.json_data().get("manaCost").map(|mana_cost| mana_cost.as_str().expect("mana cost is not a string").parse().expect("invalid mana cost"))
     }
 
+    /// Returns the number of different printings of the card. Faster than `card.printings_unsorted().len()`.
+    pub fn num_printings(&self) -> usize {
+        self.printings.len()
+    }
+
     /// Returns all the different printings of the card, sorted chronologically if possible.
     ///
     /// Warning: this method may take a very long time to return for basic lands.
