@@ -162,7 +162,7 @@ impl Db {
         //TODO make all algorithms case-insensitive
         // exact match
         if let Some(card) = self.card(search_term) {
-            let matches_set = set_code.map_or(true, |set_code| card.printings().into_iter().any(|printing| &printing.set == set_code));
+            let matches_set = set_code.map_or(true, |set_code| card.printings_unsorted().into_iter().any(|printing| &printing.set == set_code));
             if matches_set { return vec![card]; }
         }
         //TODO initials
@@ -1346,7 +1346,7 @@ impl Card {
 
     /// Returns the minimal printed rarity of the card.
     pub fn rarity(&self) -> Rarity {
-        self.printings()
+        self.printings_unsorted()
             .into_iter()
             .map(|printing| printing.rarity)
             .min()
