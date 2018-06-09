@@ -670,6 +670,8 @@ pub enum KeywordAbility {
     /// fabricate N
     Fabricate(Number),
     Partner,
+    /// partner with [name]
+    PartnerWith(String),
     Undaunted,
     Improvise,
     Aftermath,
@@ -680,6 +682,7 @@ pub enum KeywordAbility {
     /// afflict N
     Afflict(Number),
     Ascend,
+    Assist,
     #[cfg(feature = "custom")]
     /// resonance [cost]
     Resonance(Cost),
@@ -998,12 +1001,14 @@ impl KeywordAbility {
             (number "crew" => Crew),
             (number "fabricate" => Fabricate),
             (plain "partner" => Partner),
+            (text "partner with" => PartnerWith),
             (plain "undaunted" => Undaunted),
             (plain "improvise" => Improvise),
             (plain "aftermath" => Aftermath),
             (cost "embalm" => Embalm),
             (cost "eternalize" => Eternalize),
-            (number "afflict" => Afflict)
+            (number "afflict" => Afflict),
+            (plain "assist" => Assist)
         });
         None
     }

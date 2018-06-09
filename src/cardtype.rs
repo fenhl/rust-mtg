@@ -805,6 +805,8 @@ type_enum! {
         Nixilis("Nixilis"),
         /// Ral
         Ral("Ral"),
+        /// Rowan
+        Rowan("Rowan"),
         /// Saheeli
         Saheeli("Saheeli"),
         /// Samut
@@ -827,8 +829,14 @@ type_enum! {
         Venser("Venser"),
         /// Vraska
         Vraska("Vraska"),
+        /// Will
+        Will("Will"),
         /// Xenagos
-        Xenagos("Xenagos")
+        Xenagos("Xenagos"),
+        /// Yanggu
+        Yanggu("Yanggu"),
+        /// Yanling
+        Yanling("Yanling")
 
         custom
 
@@ -898,6 +906,8 @@ type_enum! {
         Aurochs("Aurochs"),
         /// Avatar
         Avatar("Avatar"),
+        /// Azra
+        Azra("Azra"),
         /// Badger
         Badger("Badger"),
         /// Barbarian
@@ -1172,6 +1182,8 @@ type_enum! {
         Ox("Ox"),
         /// Oyster
         Oyster("Oyster"),
+        /// Pangolin
+        Pangolin("Pangolin"),
         /// Pegasus
         Pegasus("Pegasus"),
         /// Pentavite
