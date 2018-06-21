@@ -846,12 +846,16 @@ type_enum! {
         Farajo("Farajo"),
         /// Faralyn
         Faralyn("Faralyn"),
+        /// Foug
+        Foug("Foug"),
         /// Gaile
         Gaile("Gaile"),
         /// Gozani
         Gozani("Gozani"),
         /// Hohoja
         Hohoja("Hohoja"),
+        /// Luma
+        Luma("Luma"),
         /// Patches
         Patches("Patches"),
         /// Roselyn
@@ -1364,7 +1368,9 @@ type_enum! {
         /// Bard
         Bard("Bard"),
         /// Farmer
-        Farmer("Farmer")
+        Farmer("Farmer"),
+        /// Gnoll
+        Gnoll("Gnoll")
     } part creature_types
 }
 
