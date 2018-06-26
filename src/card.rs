@@ -176,6 +176,7 @@ impl Db {
 
     fn register_set(&mut self, set_code: &str, set: &Json) -> Result<(), DbError> {
         let set = if let Some(set) = set.as_object() { set } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
+        if set.get("type").and_then(|set_type| set_type.as_str()) == Some("errata") { return Ok(()); } // ignore errata sets //TODO apply errata according to set priorities
         let set_border = if let Some(border) = set.get("border").and_then(|border| border.as_str()) { border } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
         let set_cards = if let Some(cards) = set.get("cards").and_then(|cards| cards.as_array()) { cards } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
         let set_release_date = if let Some(date) = set.get("releaseDate") { date } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
