@@ -827,6 +827,8 @@ type_enum! {
         Ugin("Ugin"),
         /// Venser
         Venser("Venser"),
+        /// Vivien
+        Vivien("Vivien"),
         /// Vraska
         Vraska("Vraska"),
         /// Will
@@ -998,6 +1000,8 @@ type_enum! {
         Dwarf("Dwarf"),
         /// Efreet
         Efreet("Efreet"),
+        /// Egg
+        Egg("Egg"),
         /// Elder
         Elder("Elder"),
         /// Eldrazi
