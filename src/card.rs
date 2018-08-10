@@ -543,8 +543,10 @@ pub enum KeywordAbility {
     Splice(Subtype, Cost),
     /// [subtype] offering
     Offering(Subtype),
-    /// ninjutsu [cost]
+    /// ninjutsu [cost] (regular ninjutsu)
     Ninjutsu(Cost),
+    /// commander ninjutsu [cost]
+    CommanderNinjutsu(Cost),
     Epic,
     Convoke,
     /// dredge N
@@ -925,6 +927,7 @@ impl KeywordAbility {
             (subtype_cost "splice onto" => Splice),
             (prefix_subtype " offering" => Offering),
             (cost "ninjutsu" => Ninjutsu),
+            (cost "commander ninjutsu" => CommanderNinjutsu),
             (plain "epic" => Epic),
             (plain "convoke" => Convoke),
             (number "dredge" => Dredge),

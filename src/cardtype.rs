@@ -753,6 +753,8 @@ type_enum! {
     pub enum PlaneswalkerType {
         /// Ajani
         Ajani("Ajani"),
+        /// Aminatou
+        Aminatou("Aminatou"),
         /// Angrath
         Angrath("Angrath"),
         /// Arlinn
@@ -773,6 +775,8 @@ type_enum! {
         Dovin("Dovin"),
         /// Elspeth
         Elspeth("Elspeth"),
+        /// Estrid
+        Estrid("Estrid"),
         /// Freyalise
         Freyalise("Freyalise"),
         /// Garruk
@@ -833,6 +837,8 @@ type_enum! {
         Vraska("Vraska"),
         /// Will
         Will("Will"),
+        /// Windgrace
+        Windgrace("Windgrace"),
         /// Xenagos
         Xenagos("Xenagos"),
         /// Yanggu
