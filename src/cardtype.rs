@@ -683,7 +683,11 @@ type_enum! {
         custom
 
         /// Canister
-        Canister("Canister")
+        Canister("Canister"),
+        /// Relic
+        Relic("Relic"),
+        /// Structure
+        Structure("Structure")
     } part artifact_types iter ArtifactTypeIter
 }
 

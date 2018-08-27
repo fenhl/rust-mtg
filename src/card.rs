@@ -724,7 +724,21 @@ pub enum KeywordAbility {
     Desperation,
     #[cfg(feature = "custom")]
     /// hollow [cost]
-    Hollow(Cost)
+    Hollow(Cost),
+    #[cfg(feature = "custom")]
+    /// salvage [cost]
+    Salvage(Cost),
+    #[cfg(feature = "custom")]
+    /// seal [cost]
+    Seal(Cost),
+    #[cfg(feature = "custom")]
+    /// secure N—[cost]
+    Secure(Number, Cost),
+    #[cfg(feature = "custom")]
+    /// prestige N
+    Prestige(Number),
+    #[cfg(feature = "custom")]
+    Voyage
 }
 
 macro_rules! keyword_from_str {
@@ -1035,7 +1049,14 @@ impl KeywordAbility {
             (plain "torture" => Torture),
             (cost "focus" => Focus),
             (plain "invocation" => Invocation),
-            (cost "resurrect" => Resurrect)
+            (cost "resurrect" => Resurrect),
+            (plain "desperation" => Desperation),
+            (cost "hollow" => Hollow),
+            (cost "salvage" => Salvage),
+            (cost "seal" => Seal),
+            (number_cost "secure" => Secure),
+            (number "prestige" => Prestige),
+            (plain "voyage" => Voyage)
         });
         KeywordAbility::from_str_base(s)
     }
