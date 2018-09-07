@@ -833,6 +833,8 @@ type_enum! {
         Tibalt("Tibalt"),
         /// Ugin
         Ugin("Ugin"),
+        /// Vaen
+        Vaen("Vaen"),
         /// Venser
         Venser("Venser"),
         /// Vivien
