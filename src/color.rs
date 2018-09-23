@@ -1,6 +1,14 @@
 //! This module contains two types: `Color`, a simple enum which represents a single color, and `ColorSet`, which represents a set of zero or more colors.
 
-use std::cmp::Ordering;
+use std::{
+    cmp::Ordering,
+    iter::FromIterator,
+    ops::{
+        BitOr,
+        BitOrAssign
+    },
+    str::FromStr
+};
 
 /// This enum represents a single color.
 #[allow(missing_docs)]
@@ -11,6 +19,34 @@ pub enum Color {
     Black,
     Red,
     Green
+}
+
+impl Color {
+    /// Returns the capital letter that is commonly used to abbreviate the color: `'U'` for blue, and the color's initial letter for other colors.
+    pub fn letter(&self) -> char {
+        match *self {
+            Color::White => 'W',
+            Color::Blue => 'U',
+            Color::Black => 'B',
+            Color::Red => 'R',
+            Color::Green => 'G'
+        }
+    }
+}
+
+impl FromStr for Color {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Color, ()> {
+        match &s.to_lowercase()[..] {
+            "w" | "white" => Ok(Color::White),
+            "u" | "blue" => Ok(Color::Blue),
+            "b" | "black" => Ok(Color::Black),
+            "r" | "red" => Ok(Color::Red),
+            "g" | "green" => Ok(Color::Green),
+            _ => Err(())
+        }
+    }
 }
 
 /// This struct represents a set of colors.
@@ -368,6 +404,12 @@ impl From<[bool; 5]> for ColorSet {
     }
 }
 
+impl<I: Into<Color>> FromIterator<I> for ColorSet {
+    fn from_iter<T: IntoIterator<Item = I>>(iter: T) -> ColorSet {
+        iter.into_iter().fold(ColorSet::default(), |cs, item| cs | item.into().into())
+    }
+}
+
 impl ColorSet {
     /// Returns a total ordering of color sets without the properties of the `PartialOrd` implementation, but which can be used to sort a list of e.g. cards.
     ///
@@ -496,5 +538,33 @@ impl PartialOrd for ColorSet {
             (false, true) => Some(Ordering::Greater),
             (true, true) => None
         }
+    }
+}
+
+impl<'a> BitOr<ColorSet> for &'a ColorSet {
+    type Output = ColorSet;
+
+    fn bitor(self, rhs: ColorSet) -> ColorSet {
+        ColorSet {
+            white: self.white || rhs.white,
+            blue: self.blue || rhs.blue,
+            black: self.black || rhs.black,
+            red: self.red || rhs.red,
+            green: self.green || rhs.green
+        }
+    }
+}
+
+impl BitOr<ColorSet> for ColorSet {
+    type Output = ColorSet;
+
+    fn bitor(self, rhs: ColorSet) -> ColorSet {
+        &self | rhs
+    }
+}
+
+impl BitOrAssign for ColorSet {
+    fn bitor_assign(&mut self, rhs: ColorSet) {
+        *self = &*self | rhs;
     }
 }

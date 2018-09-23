@@ -353,6 +353,18 @@ impl AddAssign for ManaCost {
     }
 }
 
+impl From<ManaCost> for ColorSet {
+    fn from(mana_cost: ManaCost) -> ColorSet {
+        let zero = BigUint::default();
+        ColorSet::default() |
+        if mana_cost.white > zero || mana_cost.phyrexian_white > zero || mana_cost.hybrid_2_white > zero || mana_cost.hybrid_white_blue > zero || mana_cost.hybrid_white_black > zero || mana_cost.hybrid_red_white > zero || mana_cost.hybrid_green_white > zero { ColorSet::white() } else { ColorSet::default() } |
+        if mana_cost.blue > zero || mana_cost.phyrexian_blue > zero || mana_cost.hybrid_2_blue > zero || mana_cost.hybrid_blue_black > zero || mana_cost.hybrid_blue_red > zero || mana_cost.hybrid_green_blue > zero || mana_cost.hybrid_white_blue > zero { ColorSet::blue() } else { ColorSet::default() } |
+        if mana_cost.black > zero || mana_cost.phyrexian_black > zero || mana_cost.hybrid_2_black > zero || mana_cost.hybrid_black_red > zero || mana_cost.hybrid_black_green > zero || mana_cost.hybrid_white_black > zero || mana_cost.hybrid_blue_black > zero { ColorSet::black() } else { ColorSet::default() } |
+        if mana_cost.red > zero || mana_cost.phyrexian_red > zero || mana_cost.hybrid_2_red > zero || mana_cost.hybrid_red_green > zero || mana_cost.hybrid_red_white > zero || mana_cost.hybrid_blue_red > zero || mana_cost.hybrid_black_red > zero { ColorSet::red() } else { ColorSet::default() } |
+        if mana_cost.green > zero || mana_cost.phyrexian_green > zero || mana_cost.hybrid_2_green > zero || mana_cost.hybrid_green_white > zero || mana_cost.hybrid_green_blue > zero || mana_cost.hybrid_black_green > zero || mana_cost.hybrid_red_green > zero { ColorSet::green() } else { ColorSet::default() }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use num::ToPrimitive;

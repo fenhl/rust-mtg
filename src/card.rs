@@ -42,6 +42,10 @@ use cardtype::{
     Supertype,
     TypeLine
 };
+use color::{
+    Color,
+    ColorSet
+};
 use cost::{
     Cost,
     ManaCost
@@ -1187,7 +1191,48 @@ impl Card {
     ///
     /// To calculate the converted mana cost on the stack for a given value of X, use the method `mana_cost`.
     pub fn cmc(&self) -> BigUint {
-        self.mana_cost().map_or(BigUint::default(), |cost| cost.converted(BigUint::default()))
+        self.mana_cost().map(|cost| cost.converted(BigUint::default())).unwrap_or_default()
+    }
+
+    /// The card's color identity. Not to be confused with the card's colors.
+    ///
+    /// Note that the return value considers basic land types part of the color identity, in accordance with the Commander Rules Committee's definition, not the Comprehensive Rules.
+    pub fn color_identity(&self) -> ColorSet {
+        if self.json_data().contains_key("colorIdentity") {
+            self.json_data()["colorIdentity"]
+                .as_array()
+                .expect("colorIdentity field is not an array")
+                .into_iter()
+                .map(|color_str| color_str.as_str().expect("colorIdentity member is not a string").parse::<Color>().expect("colorIdentity member is not a color letter"))
+                .collect()
+        } else {
+            ColorSet::default()
+        }
+    }
+
+    /// If the card has a color indicator, returns it.
+    ///
+    /// Since MTG JSON does not store color indicator information, this is computed from the card's mana cost and colors.
+    pub fn color_indicator(&self) -> Option<ColorSet> {
+        let intrinsic_colors = self.mana_cost().map(|cost| ColorSet::from(cost)).unwrap_or_default();
+        if intrinsic_colors != ColorSet::default() {
+            unimplemented!(); //TODO
+        }
+        None
+    }
+
+    /// The card's colors. Not to be confused with the card's color identity.
+    pub fn colors(&self) -> ColorSet {
+        if self.json_data().contains_key("colors") {
+            self.json_data()["colors"]
+                .as_array()
+                .expect("colors field is not an array")
+                .into_iter()
+                .map(|color_str| color_str.as_str().expect("colors member is not a string").parse::<Color>().expect("colorIdentity member is not a color word"))
+                .collect()
+        } else {
+            ColorSet::default()
+        }
     }
 
     fn dfc_symbol(&self) -> DfcSymbol {
