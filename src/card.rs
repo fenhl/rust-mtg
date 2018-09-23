@@ -1214,9 +1214,12 @@ impl Card {
     ///
     /// Since MTG JSON does not store color indicator information, this is computed from the card's mana cost and colors.
     pub fn color_indicator(&self) -> Option<ColorSet> {
-        let intrinsic_colors = self.mana_cost().map(|cost| ColorSet::from(cost)).unwrap_or_default();
-        if intrinsic_colors != ColorSet::default() {
-            unimplemented!(); //TODO
+        let actual_colors = self.colors();
+        if actual_colors != ColorSet::default() {
+            let intrinsic_colors = self.mana_cost().map(|cost| ColorSet::from(cost)).unwrap_or_default();
+            if actual_colors != intrinsic_colors {
+                return Some(actual_colors);
+            }
         }
         None
     }
@@ -1464,5 +1467,25 @@ impl Hash for Card {
 impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.json_data()["name"].as_str().expect("card name is not a string"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use color::ColorSet;
+
+    use card::Db;
+
+    fn test_indicator(db: &Db, card_name: &str, indicator: ColorSet) {
+        let card = db.card(card_name).expect(&format!("failed to find card by name {:?}", card_name));
+        assert_eq!(card.color_indicator().expect(&format!("card {:?} has no color indicator", card_name)), indicator);
+    }
+
+    #[test]
+    fn test_indicators() {
+        let db = Db::download().expect("failed to download test card db");
+        test_indicator(&db, "Dryad Arbor", ColorSet::green());
+        test_indicator(&db, "Nicol Bolas, the Arisen", ColorSet::grixis());
+        test_indicator(&db, "Transguild Courier", ColorSet::rainbow());
     }
 }
