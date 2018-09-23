@@ -1431,6 +1431,16 @@ impl Card {
             .expect("tried to get rarity of card without printings")
     }
 
+    /// Returns the card's starting stability, if any.
+    #[cfg(feature = "custom")]
+    pub fn stability(&self) -> Option<Number> {
+        self.json_data().get("stability").map(|sta| match *sta {
+            Json::Null => Number::X,
+            Json::Number(ref n) => Number::from(n.as_u64().expect(&format!("invalid starting stability: {}", n))),
+            ref v => { panic!("invalid starting stability: {}", v); }
+        })
+    }
+
     /// Returns the contents of the card's Oracle text box.
     pub fn text(&self) -> &str {
         self.json_data().get("text").and_then(Json::as_str).unwrap_or("")
