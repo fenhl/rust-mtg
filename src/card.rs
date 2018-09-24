@@ -235,12 +235,12 @@ impl Db {
     fn start_parser_thread(&self) {
         let db = self.clone();
         //TODO lower thread priority
-        thread::spawn(move || {
+        let _ = thread::Builder::new().name("MTG db parser".to_owned()).spawn(move || {
             for card in &db {
                 let _ = card.parse(); // parsing is an optimization, ignore errors
             }
             //TODO sort printings
-        });
+        }); // parsing is an optimization, ignore errors
     }
 }
 
