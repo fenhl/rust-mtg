@@ -1353,7 +1353,7 @@ impl Card {
                 "Bruna, the Fading Light" |
                 "Gisela, the Broken Blade" => DfcSymbol::Emrakul,
                 "Arguel's Blood Fast" |
-                "Temple of Aclatzotz" => DfcSymbol::Compass,
+                "Temple of Aclazotz" => DfcSymbol::Compass,
                 name => { panic!("unexpected V17 DFC: {}", name); }
             }
             set => { panic!("unexpected DFC in set {}", set); }
