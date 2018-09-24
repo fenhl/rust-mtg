@@ -1318,7 +1318,7 @@ impl Card {
         };
         match &set_code[..] {
             "ISD" | "DKA" | "SOI" => DfcSymbol::Sun,
-            "ORI" => DfcSymbol::Spark,
+            "ORI" | "M19" => DfcSymbol::Spark,
             "EMN" => match &self.name[..] {
                 "Ulrich of the Krallenhorde" | "Ulrich, Uncontested Alpha" => DfcSymbol::Sun,
                 _ => DfcSymbol::Emrakul
