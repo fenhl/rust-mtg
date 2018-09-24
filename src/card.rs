@@ -21,7 +21,11 @@ use std::{
     },
     io,
     path::Path,
-    str::FromStr
+    str::FromStr,
+    sync::{
+        Arc,
+        RwLock
+    }
 };
 
 use num::{
@@ -55,7 +59,7 @@ type Obj = ::serde_json::Map<String, Json>;
 
 /// A database of cards.
 pub struct Db {
-    cards: BTreeMap<String, Vec<Obj>>,
+    cards: BTreeMap<String, Card>,
     set_codes: HashSet<String>
 }
 
@@ -146,7 +150,7 @@ impl Db {
     ///
     /// Combined names like `Wear // Tear` are not accepted.
     pub fn card(&self, card_name: &str) -> Option<Card> {
-        self.cards.get(card_name).map(|printings| Card { printings: printings.clone() }) //TODO use a reference instead?
+        self.cards.get(card_name).cloned()
     }
 
     /// Returns cards whose name is similar to the `search_term` parameter. This tries the following matching algorithms, in order:
@@ -204,8 +208,8 @@ impl Db {
             card.insert("setCode".into(), json!(set_code));
             let card_name = if let Some(name) = card.get("name").and_then(|name| name.as_str()) { name.to_owned() } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
             self.cards.entry(card_name)
-                .or_insert_with(Vec::default)
-                .push(card.to_owned());
+                .or_insert_with(Card::default)
+                .push_printing(card.to_owned());
         }
         self.set_codes.insert(set_code.into());
         Ok(())
@@ -228,13 +232,13 @@ impl<'a> IntoIterator for &'a Db {
 
 /// Iterates over all cards in a `Db` alphabetically.
 #[derive(Debug)]
-pub struct Iter<'a>(btree_map::Values<'a, String, Vec<Obj>>);
+pub struct Iter<'a>(btree_map::Values<'a, String, Card>);
 
 impl<'a> Iterator for Iter<'a> {
     type Item = Card;
 
     fn next(&mut self) -> Option<Card> {
-        self.0.next().map(|printings| Card { printings: printings.clone() })
+        self.0.next().cloned()
     }
 }
 
@@ -346,7 +350,7 @@ impl PartialOrd for Printing {
 }
 
 /// A pair of symbols used to indicate the faces of a double-faced card.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DfcSymbol {
     /// The sun/moon symbols used in *Innistrad*, *Dark Ascension*, *Shadows over Innistrad*, and on [Ulrich of the Krallenhorde](https://mtg.wtf/card/emn/191a).
     Sun,
@@ -1129,9 +1133,20 @@ impl FromStr for Ability {
 /// Represents a card in the game.
 ///
 /// All information returned by this struct's methods matches the Oracle data, and not necessarily what was originally printed on the card.
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Card {
-    printings: Vec<Obj>
+    data: Arc<RwLock<CardData>>
+}
+
+#[derive(Debug, Clone)]
+enum CardData {
+    RawJson { printings: Vec<Obj> }
+}
+
+impl Default for CardData {
+    fn default() -> CardData {
+        CardData::RawJson { printings: Vec::default() }
+    }
 }
 
 impl Card {
@@ -1198,15 +1213,17 @@ impl Card {
     ///
     /// Note that the return value considers basic land types part of the color identity, in accordance with the Commander Rules Committee's definition, not the Comprehensive Rules.
     pub fn color_identity(&self) -> ColorSet {
-        if self.json_data().contains_key("colorIdentity") {
-            self.json_data()["colorIdentity"]
-                .as_array()
-                .expect("colorIdentity field is not an array")
-                .into_iter()
-                .map(|color_str| color_str.as_str().expect("colorIdentity member is not a string").parse::<Color>().expect("colorIdentity member is not a color letter"))
-                .collect()
-        } else {
-            ColorSet::default()
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => if printings[0].contains_key("colorIdentity") {
+                printings[0]["colorIdentity"]
+                    .as_array()
+                    .expect("colorIdentity field is not an array")
+                    .into_iter()
+                    .map(|color_str| color_str.as_str().expect("colorIdentity member is not a string").parse::<Color>().expect("colorIdentity member is not a color letter"))
+                    .collect()
+            } else {
+                ColorSet::default()
+            }
         }
     }
 
@@ -1226,20 +1243,25 @@ impl Card {
 
     /// The card's colors. Not to be confused with the card's color identity.
     pub fn colors(&self) -> ColorSet {
-        if self.json_data().contains_key("colors") {
-            self.json_data()["colors"]
-                .as_array()
-                .expect("colors field is not an array")
-                .into_iter()
-                .map(|color_str| color_str.as_str().expect("colors member is not a string").parse::<Color>().expect("colorIdentity member is not a color word"))
-                .collect()
-        } else {
-            ColorSet::default()
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => if printings[0].contains_key("colors") {
+                printings[0]["colors"]
+                    .as_array()
+                    .expect("colors field is not an array")
+                    .into_iter()
+                    .map(|color_str| color_str.as_str().expect("colors member is not a string").parse::<Color>().expect("colorIdentity member is not a color word"))
+                    .collect()
+            } else {
+                ColorSet::default()
+            }
         }
     }
 
     fn dfc_symbol(&self) -> DfcSymbol {
-        match self.json_data()["setCode"].as_str().expect("setCode is not a string") {
+        let set_code = match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => printings[0]["setCode"].as_str().expect("setCode is not a string").to_owned()
+        };
+        match &set_code[..] {
             "ISD" | "DKA" | "SOI" => DfcSymbol::Sun,
             "ORI" => DfcSymbol::Spark,
             "EMN" => match &self.to_string()[..] {
@@ -1290,9 +1312,13 @@ impl Card {
 
     #[cfg(feature = "custom")]
     fn dfc_symbol_custom(&self) -> DfcSymbol {
-        match self.json_data()["setCode"].as_str().expect("setCode is not a string") {
-            "VLN" => DfcSymbol::Spark,
+        let set_code = match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => printings[0]["setCode"].as_str().expect("setCode is not a string")
+        };
+        match set_code {
             "TSL" => DfcSymbol::Chalice,
+            "VLN" => DfcSymbol::Spark,
+            "RAK" => DfcSymbol::Sun,
             set => self.dfc_symbol()
         }
     }
@@ -1303,20 +1329,24 @@ impl Card {
     /// *   The flipped version of a flip card, and
     /// *   The back face of a double-faced or meld card.
     pub fn is_alt(&self) -> bool {
-        let names = if self.json_data().contains_key("names") {
-            self.json_data()["names"]
-                .as_array()
-                .expect("names field is not an array")
-                .into_iter()
-                .map(|name| name.as_str().expect("alt name is not a string"))
-                .collect()
-        } else {
-            Vec::default()
+        let names = match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => if printings[0].contains_key("names") {
+                printings[0]["names"]
+                    .as_array()
+                    .expect("names field is not an array")
+                    .into_iter()
+                    .map(|name| name.as_str().expect("alt name is not a string").to_owned())
+                    .collect()
+            } else {
+                Vec::default()
+            }
         };
-        match self.json_data()["layout"].as_str().expect("card layout is not a string") {
-            "split" | "flip" | "double-faced" => self.to_string() == names[1],
-            "meld" => self.to_string() == names[2],
-            _ => false
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => match printings[0]["layout"].as_str().expect("card layout is not a string") {
+                "split" | "flip" | "double-faced" => self.to_string() == names[1],
+                "meld" => self.to_string() == names[2],
+                _ => false
+            }
         }
     }
 
@@ -1330,58 +1360,64 @@ impl Card {
         }
     }
 
-    fn json_data(&self) -> &Obj {
-        &self.printings[0]
-    }
-
     /// Returns the layout of the card.
-    pub fn layout(&self, db: &Db) -> Layout {
-        let names = if self.json_data().contains_key("names") {
-            self.json_data()["names"]
-                .as_array()
-                .expect("names field is not an array")
-                .into_iter()
-                .map(|name| db.card(name.as_str().expect("alt name is not a string")).expect("alt card name not found in database"))
-                .collect()
-        } else {
-            Vec::default()
-        };
-        match self.json_data()["layout"].as_str().expect("card layout is not a string") {
-            "split" | "aftermath" => Layout::Split { left: names[0].clone(), right: names[1].clone() },
-            "flip" => Layout::Flip { unflipped: names[0].clone(), flipped: names[1].clone() },
-            "double-faced" => {
-                Layout::DoubleFaced {
-                    symbol: self.dfc_symbol_custom(),
-                    front: names[0].clone(),
-                    back: names[1].clone()
-                }
+    pub fn layout(&self, db: &Db) -> Layout { //TODO remove `Db` argument
+        let names = match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => if printings[0].contains_key("names") {
+                printings[0]["names"]
+                    .as_array()
+                    .expect("names field is not an array")
+                    .into_iter()
+                    .map(|name| db.card(name.as_str().expect("alt name is not a string")).expect("alt card name not found in database"))
+                    .collect()
+            } else {
+                Vec::default()
             }
-            "meld" => Layout::Meld {
-                top: names[0].clone(),
-                bottom: names[1].clone(),
-                back: names[2].clone()
-            },
-            _ => Layout::Normal
+        };
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => match printings[0]["layout"].as_str().expect("card layout is not a string") {
+                "split" | "aftermath" => Layout::Split { left: names[0].clone(), right: names[1].clone() },
+                "flip" => Layout::Flip { unflipped: names[0].clone(), flipped: names[1].clone() },
+                "double-faced" => {
+                    Layout::DoubleFaced {
+                        symbol: self.dfc_symbol_custom(),
+                        front: names[0].clone(),
+                        back: names[1].clone()
+                    }
+                }
+                "meld" => Layout::Meld {
+                    top: names[0].clone(),
+                    bottom: names[1].clone(),
+                    back: names[2].clone()
+                },
+                _ => Layout::Normal
+            }
         }
     }
 
     /// Returns the card's starting loyalty, if any.
     pub fn loyalty(&self) -> Option<Number> {
-        self.json_data().get("loyalty").map(|loy| match *loy {
-            Json::Null => Number::X,
-            Json::Number(ref n) => Number::from(n.as_u64().expect(&format!("invalid starting loyalty: {}", n))),
-            ref v => { panic!("invalid starting loyalty: {}", v); }
-        })
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => printings[0].get("loyalty").map(|loy| match *loy {
+                Json::Null => Number::X,
+                Json::Number(ref n) => Number::from(n.as_u64().expect(&format!("invalid starting loyalty: {}", n))),
+                ref v => { panic!("invalid starting loyalty: {}", v); }
+            })
+        }
     }
 
     /// Returns the card's mana cost, or `None` if it has an unpayable cost.
     pub fn mana_cost(&self) -> Option<ManaCost> {
-        self.json_data().get("manaCost").map(|mana_cost| mana_cost.as_str().expect("mana cost is not a string").parse().expect("invalid mana cost"))
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => printings[0].get("manaCost").map(|mana_cost| mana_cost.as_str().expect("mana cost is not a string").parse().expect("invalid mana cost"))
+        }
     }
 
     /// Returns the number of different printings of the card. Faster than `card.printings_unsorted().len()`.
     pub fn num_printings(&self) -> usize {
-        self.printings.len()
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => printings.len()
+        }
     }
 
     /// Returns all the different printings of the card, sorted chronologically if possible.
@@ -1393,32 +1429,45 @@ impl Card {
 
     /// Returns all the different printings of the card, in no particular order.
     pub fn printings_unsorted(&self) -> Vec<Printing> {
-        self.printings.iter().map(|printing_json| {
-            let release_date_parts = printing_json["releaseDate"].as_str().expect("releaseDate is not a string").split('-').collect::<Vec<_>>();
-            let (year, month, day) = match release_date_parts.len() {
-                1 => (u32::from_str(release_date_parts[0]).expect("invalid year in release date"), None, None),
-                2 => (u32::from_str(release_date_parts[0]).expect("invalid year in release date"), Some(u8::from_str(release_date_parts[1]).expect("invalid month in release date")), None),
-                3 => (u32::from_str(release_date_parts[0]).expect("invalid year in release date"), Some(u8::from_str(release_date_parts[1]).expect("invalid month in release date")), Some(u8::from_str(release_date_parts[2]).expect("invalid day in release date"))),
-                _ => { panic!("invalid release date"); }
-            };
-            Printing {
-                card: self.clone(),
-                set: printing_json["setCode"].as_str().expect("setCode is not a string").to_owned(),
-                release_date: ReleaseDate {
-                    year: year,
-                    month: month,
-                    day: day
-                },
-                rarity: ::serde_json::from_value(printing_json["rarity"].clone()).expect("failed to parse printing rarity")
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => {
+                printings.iter().map(|printing_json| {
+                    let release_date_parts = printing_json["releaseDate"].as_str().expect("releaseDate is not a string").split('-').collect::<Vec<_>>();
+                    let (year, month, day) = match release_date_parts.len() {
+                        1 => (u32::from_str(release_date_parts[0]).expect("invalid year in release date"), None, None),
+                        2 => (u32::from_str(release_date_parts[0]).expect("invalid year in release date"), Some(u8::from_str(release_date_parts[1]).expect("invalid month in release date")), None),
+                        3 => (u32::from_str(release_date_parts[0]).expect("invalid year in release date"), Some(u8::from_str(release_date_parts[1]).expect("invalid month in release date")), Some(u8::from_str(release_date_parts[2]).expect("invalid day in release date"))),
+                        _ => { panic!("invalid release date"); }
+                    };
+                    Printing {
+                        card: self.clone(),
+                        set: printing_json["setCode"].as_str().expect("setCode is not a string").to_owned(),
+                        release_date: ReleaseDate {
+                            year: year,
+                            month: month,
+                            day: day
+                        },
+                        rarity: ::serde_json::from_value(printing_json["rarity"].clone()).expect("failed to parse printing rarity")
+                    }
+                }).collect()
             }
-        }).collect()
+        }
     }
 
     /// Returns the card's printed power and toughness, if any.
-    pub fn pt(&self) -> Option<(&str, &str)> {
-        match (self.json_data().get("power").and_then(Json::as_str), self.json_data().get("toughness").and_then(Json::as_str)) {
-            (Some(pow), Some(tou)) => Some((pow, tou)),
-            _ => None
+    pub fn pt(&self) -> Option<(String, String)> {
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => match (printings[0].get("power").and_then(Json::as_str), printings[0].get("toughness").and_then(Json::as_str)) {
+                (Some(pow), Some(tou)) => Some((pow.to_owned(), tou.to_owned())),
+                _ => None
+            }
+        }
+    }
+
+    fn push_printing(&mut self, printing: Obj) {
+        match *self.data.write().unwrap() {
+            CardData::RawJson { ref mut printings } => { printings.push(printing); }
+            //_ => { panic!("tried to add a printing to card data that's not in raw JSON form"); }
         }
     }
 
@@ -1434,28 +1483,36 @@ impl Card {
     /// Returns the card's starting stability, if any.
     #[cfg(feature = "custom")]
     pub fn stability(&self) -> Option<Number> {
-        self.json_data().get("stability").map(|sta| match *sta {
-            Json::Null => Number::X,
-            Json::Number(ref n) => Number::from(n.as_u64().expect(&format!("invalid starting stability: {}", n))),
-            ref v => { panic!("invalid starting stability: {}", v); }
-        })
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => printings[0].get("stability").map(|sta| match *sta {
+                Json::Null => Number::X,
+                Json::Number(ref n) => Number::from(n.as_u64().expect(&format!("invalid starting stability: {}", n))),
+                ref v => { panic!("invalid starting stability: {}", v); }
+            })
+        }
     }
 
     /// Returns the contents of the card's Oracle text box.
-    pub fn text(&self) -> &str {
-        self.json_data().get("text").and_then(Json::as_str).unwrap_or("")
+    pub fn text(&self) -> String {
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => printings[0].get("text").and_then(Json::as_str).unwrap_or("").to_owned()
+        }
     }
 
     /// Returns the card's type line.
     pub fn type_line(&self) -> TypeLine {
-        TypeLine::from_str(self.json_data()["type"].as_str().expect("type line is not a string")).expect("failed to parse type line")
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => TypeLine::from_str(printings[0]["type"].as_str().expect("type line is not a string")).expect("failed to parse type line")
+        }
     }
 
     /// Returns the card's hand and life modifier, if any.
     pub fn vanguard_modifiers(&self) -> Option<(i64, i64)> {
-        match (self.json_data().get("hand").and_then(Json::as_i64), self.json_data().get("life").and_then(Json::as_i64)) {
-            (Some(hand), Some(life)) => Some((hand, life)),
-            _ => None
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => match (printings[0].get("hand").and_then(Json::as_i64), printings[0].get("life").and_then(Json::as_i64)) {
+                (Some(hand), Some(life)) => Some((hand, life)),
+                _ => None
+            }
         }
     }
 }
@@ -1476,7 +1533,9 @@ impl Hash for Card {
 
 impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.json_data()["name"].as_str().expect("card name is not a string"))
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => write!(f, "{}", printings[0]["name"].as_str().expect("card name is not a string"))
+        }
     }
 }
 
