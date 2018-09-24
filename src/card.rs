@@ -3,6 +3,7 @@
 use std::{
     cmp::Ordering,
     collections::{
+        HashMap,
         HashSet,
         btree_map::{
             self,
@@ -1160,7 +1161,7 @@ impl FromStr for Ability {
 pub struct Card {
     name: String,
     data: Arc<RwLock<CardData>>,
-    other: Arc<RwLock<BTreeMap<String, Card>>>
+    other: Arc<RwLock<HashMap<String, Card>>>
 }
 
 #[derive(Debug, Clone)]
@@ -1322,7 +1323,7 @@ impl Card {
                 "Ulrich of the Krallenhorde" | "Ulrich, Uncontested Alpha" => DfcSymbol::Sun,
                 _ => DfcSymbol::Emrakul
             },
-            "XLN" => DfcSymbol::Compass,
+            "XLN" | "RIX" => DfcSymbol::Compass,
             "V17" => match &self.name[..] {
                 "Archangel Avacyn" |
                 "Arlinn Kord" |
@@ -1386,19 +1387,10 @@ impl Card {
     pub fn is_alt(&self) -> bool {
         match *self.data.read().unwrap() {
             CardData::RawJson { ref printings } => {
-                let names = if printings[0].contains_key("names") {
-                    printings[0]["names"]
-                        .as_array()
-                        .expect("names field is not an array")
-                        .into_iter()
-                        .map(|name| name.as_str().expect("alt name is not a string").to_owned())
-                        .collect()
-                } else {
-                    Vec::default()
-                };
+                let names = self.names(printings);
                 match printings[0]["layout"].as_str().expect("card layout is not a string") {
-                    "split" | "flip" | "double-faced" => self.name == names[1],
-                    "meld" => self.name == names[2],
+                    "split" | "flip" | "double-faced" => self.name == names[1].name,
+                    "meld" => self.name == names[2].name,
                     _ => false
                 }
             }
@@ -1426,16 +1418,7 @@ impl Card {
     pub fn layout(&self) -> Layout {
         match *self.data.read().unwrap() {
             CardData::RawJson { ref printings } => {
-                let names = if printings[0].contains_key("names") {
-                    printings[0]["names"]
-                        .as_array()
-                        .expect("names field is not an array")
-                        .into_iter()
-                        .map(|name| self.other.read().unwrap()[name.as_str().expect("alt name is not a string")].clone())
-                        .collect()
-                } else {
-                    Vec::default()
-                };
+                let names = self.names(printings);
                 match printings[0]["layout"].as_str().expect("card layout is not a string") {
                     "split" | "aftermath" => Layout::Split { left: names[0].clone(), right: names[1].clone() },
                     "flip" => Layout::Flip { unflipped: names[0].clone(), flipped: names[1].clone() },
@@ -1475,6 +1458,31 @@ impl Card {
         match *self.data.read().unwrap() {
             CardData::RawJson { ref printings } => printings[0].get("manaCost").map(|mana_cost| mana_cost.as_str().expect("mana cost is not a string").parse().expect("invalid mana cost")),
             CardData::Parsed { ref mana_cost, .. } => mana_cost.clone()
+        }
+    }
+
+    fn names(&self, printings: &[Obj]) -> Vec<Card> {
+        if printings[0].contains_key("names") {
+            printings[0]["names"]
+                .as_array()
+                .expect("names field is not an array")
+                .into_iter()
+                .map(|name| {
+                    let name = name.as_str().expect("alt name is not a string");
+                    if name == self.name {
+                        self.clone()
+                    } else {
+                        self.other
+                            .read()
+                            .unwrap()
+                            .get(name)
+                            .expect(&format!("Card {} missing from `other` map in {}", name, self))
+                            .clone()
+                    }
+                })
+                .collect()
+        } else {
+            vec![self.clone()]
         }
     }
 
