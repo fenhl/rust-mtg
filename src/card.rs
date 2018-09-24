@@ -207,9 +207,21 @@ impl Db {
             card.entry("releaseDate".to_owned()).or_insert(set_release_date.clone());
             card.insert("setCode".into(), json!(set_code));
             let card_name = if let Some(name) = card.get("name").and_then(|name| name.as_str()) { name.to_owned() } else { return Err(DbError::ParseSet { set_code: set_code.into() }); };
-            self.cards.entry(card_name)
-                .or_insert_with(Card::default)
+            self.cards.entry(card_name.clone())
+                .or_insert_with(|| Card::new(&card_name))
                 .push_printing(card.to_owned());
+            // add cross-references to other parts of the card
+            if let Some(names) = card.get("names").and_then(|names| names.as_array()) {
+                for name_json in names {
+                    let other_name = name_json.as_str().ok_or(DbError::ParseSet { set_code: set_code.into() })?;
+                    if other_name != card_name {
+                        let other_card = self.cards.entry(other_name.to_owned())
+                            .or_insert_with(|| Card::new(other_name)).clone();
+                        other_card.push_other(self.cards[&card_name].clone());
+                        self.cards[&card_name].push_other(other_card);
+                    }
+                }
+            }
         }
         self.set_codes.insert(set_code.into());
         Ok(())
@@ -1133,9 +1145,11 @@ impl FromStr for Ability {
 /// Represents a card in the game.
 ///
 /// All information returned by this struct's methods matches the Oracle data, and not necessarily what was originally printed on the card.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Card {
-    data: Arc<RwLock<CardData>>
+    name: String,
+    data: Arc<RwLock<CardData>>,
+    other: Arc<RwLock<BTreeMap<String, Card>>>
 }
 
 #[derive(Debug, Clone)]
@@ -1150,6 +1164,14 @@ impl Default for CardData {
 }
 
 impl Card {
+    fn new(name: impl ToString) -> Card {
+        Card {
+            name: name.to_string(),
+            data: Arc::default(),
+            other: Arc::default()
+        }
+    }
+
     /// Returns each ability printed on the card as a string.
     ///
     /// Reminder text is removed, and multiple keyword abilities on one line are split into separate abilities. However, ability words will be retained.
@@ -1264,12 +1286,12 @@ impl Card {
         match &set_code[..] {
             "ISD" | "DKA" | "SOI" => DfcSymbol::Sun,
             "ORI" => DfcSymbol::Spark,
-            "EMN" => match &self.to_string()[..] {
+            "EMN" => match &self.name[..] {
                 "Ulrich of the Krallenhorde" | "Ulrich, Uncontested Alpha" => DfcSymbol::Sun,
                 _ => DfcSymbol::Emrakul
             },
             "XLN" => DfcSymbol::Compass,
-            "V17" => match &self.to_string()[..] {
+            "V17" => match &self.name[..] {
                 "Archangel Avacyn" |
                 "Arlinn Kord" |
                 "Arlinn, Embraced by the Moon" |
@@ -1313,13 +1335,13 @@ impl Card {
     #[cfg(feature = "custom")]
     fn dfc_symbol_custom(&self) -> DfcSymbol {
         let set_code = match *self.data.read().unwrap() {
-            CardData::RawJson { ref printings } => printings[0]["setCode"].as_str().expect("setCode is not a string")
+            CardData::RawJson { ref printings } => printings[0]["setCode"].as_str().expect("setCode is not a string").to_owned()
         };
-        match set_code {
+        match &set_code[..] {
             "TSL" => DfcSymbol::Chalice,
             "VLN" => DfcSymbol::Spark,
             "RAK" => DfcSymbol::Sun,
-            set => self.dfc_symbol()
+            _ => self.dfc_symbol()
         }
     }
 
@@ -1343,8 +1365,8 @@ impl Card {
         };
         match *self.data.read().unwrap() {
             CardData::RawJson { ref printings } => match printings[0]["layout"].as_str().expect("card layout is not a string") {
-                "split" | "flip" | "double-faced" => self.to_string() == names[1],
-                "meld" => self.to_string() == names[2],
+                "split" | "flip" | "double-faced" => self.name == names[1],
+                "meld" => self.name == names[2],
                 _ => false
             }
         }
@@ -1354,21 +1376,21 @@ impl Card {
     ///
     /// This method is intended for limited formats where any number of these cards may be added to a player's card pool, and not for e.g. determining deck legality with respect to the 4-copy limit.
     pub fn is_basic(&self) -> bool {
-        match &self.to_string()[..] {
+        match &self.name[..] {
             "Plains" | "Island" | "Swamp" | "Mountain" | "Forest" => true,
             _ => false
         }
     }
 
     /// Returns the layout of the card.
-    pub fn layout(&self, db: &Db) -> Layout { //TODO remove `Db` argument
+    pub fn layout(&self) -> Layout {
         let names = match *self.data.read().unwrap() {
             CardData::RawJson { ref printings } => if printings[0].contains_key("names") {
                 printings[0]["names"]
                     .as_array()
                     .expect("names field is not an array")
                     .into_iter()
-                    .map(|name| db.card(name.as_str().expect("alt name is not a string")).expect("alt card name not found in database"))
+                    .map(|name| self.other.read().unwrap()[name.as_str().expect("alt name is not a string")].clone())
                     .collect()
             } else {
                 Vec::default()
@@ -1464,7 +1486,11 @@ impl Card {
         }
     }
 
-    fn push_printing(&mut self, printing: Obj) {
+    fn push_other(&self, other: Card) {
+        self.other.write().unwrap().insert(other.name.clone(), other);
+    }
+
+    fn push_printing(&self, printing: Obj) {
         match *self.data.write().unwrap() {
             CardData::RawJson { ref mut printings } => { printings.push(printing); }
             //_ => { panic!("tried to add a printing to card data that's not in raw JSON form"); }
@@ -1519,7 +1545,7 @@ impl Card {
 
 impl PartialEq for Card {
     fn eq(&self, other: &Card) -> bool {
-        self.to_string() == other.to_string()
+        self.name == other.name
     }
 }
 
@@ -1527,15 +1553,13 @@ impl Eq for Card {}
 
 impl Hash for Card {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.to_string().hash(state);
+        self.name.hash(state);
     }
 }
 
 impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self.data.read().unwrap() {
-            CardData::RawJson { ref printings } => write!(f, "{}", printings[0]["name"].as_str().expect("card name is not a string"))
-        }
+        write!(f, "{}", self.name)
     }
 }
 
