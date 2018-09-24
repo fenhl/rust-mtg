@@ -868,14 +868,20 @@ type_enum! {
         Gozani("Gozani"),
         /// Hohoja
         Hohoja("Hohoja"),
+        /// Hupiri
+        Hupiri("Hupiri"),
         /// Luma
         Luma("Luma"),
+        /// Nibinem
+        Nibinem("Nibinem"),
         /// Patches
         Patches("Patches"),
         /// Roselyn
         Roselyn("Roselyn"),
         /// Sobki
         Sobki("Sobki"),
+        /// Toahanga
+        Toahanga("Toahanga"),
         /// Veila
         Veila("Veila"),
         /// Yemma
@@ -1383,10 +1389,16 @@ type_enum! {
 
         /// Bard
         Bard("Bard"),
+        /// Coral
+        Coral("Coral"),
+        /// Dolphin
+        Dolphin("Dolphin"),
         /// Farmer
         Farmer("Farmer"),
-        /// Gnoll
-        Gnoll("Gnoll")
+        /// Giraffe
+        Giraffe("Giraffe"),
+        /// Ship
+        Ship("Ship")
     } part creature_types
 }
 
