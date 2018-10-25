@@ -870,16 +870,24 @@ type_enum! {
         Hohoja("Hohoja"),
         /// Hupiri
         Hupiri("Hupiri"),
+        /// L3-T
+        L3T("L3-T"),
         /// Luma
         Luma("Luma"),
         /// Nibinem
         Nibinem("Nibinem"),
+        /// Nic
+        Nic("Nic"),
         /// Patches
         Patches("Patches"),
         /// Roselyn
         Roselyn("Roselyn"),
+        /// Sarasa
+        Sarasa("Sarasa"),
         /// Sobki
         Sobki("Sobki"),
+        /// Talya
+        Talya("Talya"),
         /// Toahanga
         Toahanga("Toahanga"),
         /// Veila
@@ -1397,6 +1405,10 @@ type_enum! {
         Farmer("Farmer"),
         /// Giraffe
         Giraffe("Giraffe"),
+        /// Mech
+        Mech("Mech"),
+        /// Nanobot
+        Nanobot("Nanobot"),
         /// Ship
         Ship("Ship")
     } part creature_types

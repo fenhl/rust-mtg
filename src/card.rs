@@ -718,6 +718,9 @@ pub enum KeywordAbility {
     Afflict(Number),
     Ascend,
     Assist,
+    /// jump-start
+    JumpStart,
+    Mentor,
     #[cfg(feature = "custom")]
     /// resonance [cost]
     Resonance(Cost),
@@ -1058,7 +1061,9 @@ impl KeywordAbility {
             (cost "embalm" => Embalm),
             (cost "eternalize" => Eternalize),
             (number "afflict" => Afflict),
-            (plain "assist" => Assist)
+            (plain "assist" => Assist),
+            (plain "jump-start" => JumpStart),
+            (plain "mentor" => Mentor)
         });
         None
     }
