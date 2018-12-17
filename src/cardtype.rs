@@ -892,6 +892,8 @@ type_enum! {
         Toahanga("Toahanga"),
         /// Veila
         Veila("Veila"),
+        /// Wulani
+        Wulani("Wulani"),
         /// Yemma
         Yemma("Yemma")
     } part planeswalker_types iter PlaneswalkerTypeIter
