@@ -34,23 +34,28 @@ use num::{
     BigUint
 };
 use regex::Regex;
-use serde_json::Value as Json;
+use serde_derive::Deserialize;
+use serde_json::{
+    Value as Json,
+    json
+};
 use topological_sort::TopologicalSort;
-
-use cardtype::{
-    CardType,
-    LandType,
-    Subtype,
-    Supertype,
-    TypeLine
-};
-use color::{
-    Color,
-    ColorSet
-};
-use cost::{
-    Cost,
-    ManaCost
+use crate::{
+    cardtype::{
+        CardType,
+        LandType,
+        Subtype,
+        Supertype,
+        TypeLine
+    },
+    color::{
+        Color,
+        ColorSet
+    },
+    cost::{
+        Cost,
+        ManaCost
+    }
 };
 
 type Obj = ::serde_json::Map<String, Json>;
@@ -1653,20 +1658,35 @@ impl fmt::Display for Card {
 
 #[cfg(test)]
 mod tests {
-    use color::ColorSet;
+    use crate::{
+        card::{
+            Db,
+            DbError
+        },
+        color::ColorSet
+    };
 
-    use card::Db;
-
-    fn test_indicator(db: &Db, card_name: &str, indicator: ColorSet) {
-        let card = db.card(card_name).expect(&format!("failed to find card by name {:?}", card_name));
-        assert_eq!(card.color_indicator().expect(&format!("card {:?} has no color indicator", card_name)), indicator);
+    fn test_indicator(db: &Db, card_name: &str, indicator: ColorSet) -> Option<()> {
+        let card = db.card(card_name)?;
+        assert_eq!(card.color_indicator()?, indicator);
+        Some(())
     }
 
     #[test]
-    fn test_indicators() {
-        let db = Db::download().expect("failed to download test card db");
+    fn test_indicators() -> Result<(), DbError> {
+        let db = Db::download()?;
         test_indicator(&db, "Dryad Arbor", ColorSet::green());
         test_indicator(&db, "Nicol Bolas, the Arisen", ColorSet::grixis());
         test_indicator(&db, "Transguild Courier", ColorSet::rainbow());
+        Ok(())
+    }
+
+    #[cfg(feature = "custom")]
+    #[test]
+    fn test_lore_seeker_db() -> Result<(), DbError> {
+        let db = Db::from_sets_dir("/opt/git/github.com/fenhl/lore-seeker/master/data/sets")?;
+        test_indicator(&db, "Ancient Elemental", ColorSet::rainbow());
+        test_indicator(&db, "Awaken the Nameless", ColorSet::blue());
+        Ok(())
     }
 }

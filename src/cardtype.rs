@@ -12,8 +12,8 @@ use std::{
     },
     str::FromStr
 };
-
-use color::{
+use wrapped_enum::wrapped_enum;
+use crate::color::{
     Color,
     ColorSet
 };
@@ -136,7 +136,7 @@ impl TypeLine {
             land_types: land_types,
             planeswalker_types: planeswalker_types,
             spell_types: spell_types,
-            creature_types: ::util::full_dedup(creature_types),
+            creature_types: crate::util::full_dedup(creature_types),
             planar_types: planar_types
         })
     }
@@ -204,7 +204,7 @@ impl FromStr for TypeLine {
                 }
             }
         }
-        Ok(try!(TypeLine::new(supertypes, types, artifact_types, enchantment_types, land_types, planeswalker_types, spell_types, creature_types, planar_types)))
+        Ok(TypeLine::new(supertypes, types, artifact_types, enchantment_types, land_types, planeswalker_types, spell_types, creature_types, planar_types)?)
     }
 }
 
@@ -216,7 +216,7 @@ impl fmt::Display for TypeLine {
         // supertypes
         for supertype in Supertype::iter_variants() {
             if self.supertypes.contains(&supertype) {
-                try!(write!(f, "{} ", supertype));
+                write!(f, "{} ", supertype)?;
             }
         }
         // types
@@ -229,14 +229,14 @@ impl fmt::Display for TypeLine {
                     if first {
                         first = false;
                     } else {
-                        try!(write!(f, " "));
+                        write!(f, " ")?;
                     }
-                    try!(write!(f, "{}", card_type));
+                    write!(f, "{}", card_type)?;
                 }
             }
             // dash
             if !self.artifact_types.is_empty() || !self.enchantment_types.is_empty() || !self.land_types.is_empty() || !self.planeswalker_types.is_empty() || !self.spell_types.is_empty() || !self.creature_types.is_empty() || !self.planar_types.is_empty() {
-                try!(write!(f, " \u{2014} "));
+                write!(f, " \u{2014} ")?;
                 // subtypes
                 let mut first = true;
                 // creature types (for unanimated tribals)
@@ -245,9 +245,9 @@ impl fmt::Display for TypeLine {
                         if first {
                             first = false;
                         } else {
-                            try!(write!(f, " "));
+                            write!(f, " ")?;
                         }
-                        try!(write!(f, "{}", creature_type));
+                        write!(f, "{}", creature_type)?;
                     }
                 }
                 // spell types
@@ -256,9 +256,9 @@ impl fmt::Display for TypeLine {
                         if first {
                             first = false;
                         } else {
-                            try!(write!(f, " "));
+                            write!(f, " ")?;
                         }
-                        try!(write!(f, "{}", spell_type));
+                        write!(f, "{}", spell_type)?;
                     }
                 }
                 // enchantment types
@@ -267,9 +267,9 @@ impl fmt::Display for TypeLine {
                         if first {
                             first = false;
                         } else {
-                            try!(write!(f, " "));
+                            write!(f, " ")?;
                         }
-                        try!(write!(f, "{}", ench_type));
+                        write!(f, "{}", ench_type)?;
                     }
                 }
                 // artifact types
@@ -278,9 +278,9 @@ impl fmt::Display for TypeLine {
                         if first {
                             first = false;
                         } else {
-                            try!(write!(f, " "));
+                            write!(f, " ")?;
                         }
-                        try!(write!(f, "{}", artifact_type));
+                        write!(f, "{}", artifact_type)?;
                     }
                 }
                 // Urza's
@@ -288,9 +288,9 @@ impl fmt::Display for TypeLine {
                     if first {
                         first = false;
                     } else {
-                        try!(write!(f, " "));
+                        write!(f, " ")?;
                     }
-                    try!(write!(f, "{}", Urzas));
+                    write!(f, "{}", Urzas)?;
                 }
                 // basic land types
                 let land_types = ColorSet::from([
@@ -306,7 +306,7 @@ impl fmt::Display for TypeLine {
                     } else {
                         write!(f, " ")?;
                     }
-                    try!(write!(f, "{}", LandType::from(color)));
+                    write!(f, "{}", LandType::from(color))?;
                 }
                 // nonbasic land types (other than Urza's)
                 let nonbasic_land_types = LandType::iter_variants().filter(|land_type| ![Urzas, Plains, Island, Swamp, Mountain, Forest].contains(land_type));
@@ -315,9 +315,9 @@ impl fmt::Display for TypeLine {
                         if first {
                             first = false;
                         } else {
-                            try!(write!(f, " "));
+                            write!(f, " ")?;
                         }
-                        try!(write!(f, "{}", land_type));
+                        write!(f, "{}", land_type)?;
                     }
                 }
                 // creature types (for actual creatures)
@@ -326,9 +326,9 @@ impl fmt::Display for TypeLine {
                         if first {
                             first = false;
                         } else {
-                            try!(write!(f, " "));
+                            write!(f, " ")?;
                         }
-                        try!(write!(f, "{}", creature_type));
+                        write!(f, "{}", creature_type)?;
                     }
                 }
                 // planeswalker types
@@ -337,9 +337,9 @@ impl fmt::Display for TypeLine {
                         if first {
                             first = false;
                         } else {
-                            try!(write!(f, " "));
+                            write!(f, " ")?;
                         }
-                        try!(write!(f, "{}", planeswalker_type));
+                        write!(f, "{}", planeswalker_type)?;
                     }
                 }
                 // planar types
@@ -348,9 +348,9 @@ impl fmt::Display for TypeLine {
                         if first {
                             first = false;
                         } else {
-                            try!(write!(f, ", "));
+                            write!(f, ", ")?;
                         }
-                        try!(write!(f, "{}", planar_type));
+                        write!(f, "{}", planar_type)?;
                     }
                 }
             }
@@ -439,7 +439,7 @@ impl<'a, T: Into<TypeLine>> BitOr<T> for &'a TypeLine {
             land_types: &self.land_types | &rhs.land_types,
             planeswalker_types: &self.planeswalker_types | &rhs.planeswalker_types,
             spell_types: &self.spell_types | &rhs.spell_types,
-            creature_types: ::util::full_dedup(self.creature_types.iter().cloned().chain(rhs.creature_types).collect()),
+            creature_types: crate::util::full_dedup(self.creature_types.iter().cloned().chain(rhs.creature_types).collect()),
             planar_types: &self.planar_types | &rhs.planar_types
         }
     }
@@ -1558,7 +1558,7 @@ impl From<Subtype> for TypeLine {
 
 #[cfg(test)]
 mod tests {
-    use card::Db;
+    use crate::card::Db;
 
     fn test_type_line(db: &Db, card_name: &str, type_line: &str) {
         let card = db.card(card_name).expect(&format!("failed to find card by name {:?}", card_name));

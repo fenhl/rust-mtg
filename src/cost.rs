@@ -11,14 +11,12 @@ use std::{
     },
     str::FromStr
 };
-
 use num::{
     BigUint,
     One,
     ToPrimitive
 };
-
-use color::{
+use crate::color::{
     Color,
     ColorSet
 };
@@ -368,8 +366,7 @@ impl From<ManaCost> for ColorSet {
 #[cfg(test)]
 mod tests {
     use num::ToPrimitive;
-
-    use card::Db;
+    use crate::card::Db;
 
     fn test_cmc(db: &Db, card_name: &str, cmc: u64) {
         let card = db.card(card_name).expect(&format!("failed to find card by name {:?}", card_name));

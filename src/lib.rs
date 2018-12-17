@@ -5,14 +5,6 @@
 #![deny(unused, missing_docs, unused_qualifications)]
 #![forbid(unused_import_braces)]
 
-extern crate num;
-extern crate regex;
-extern crate reqwest;
-#[macro_use] extern crate serde_derive;
-#[macro_use] extern crate serde_json;
-extern crate topological_sort;
-#[macro_use] extern crate wrapped_enum;
-
 pub mod card;
 pub mod cardtype;
 pub mod color;
