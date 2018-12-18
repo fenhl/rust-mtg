@@ -798,8 +798,7 @@ pub enum KeywordAbility {
     #[cfg(feature = "custom")]
     Desperation,
     #[cfg(feature = "custom")]
-    /// hollow [cost]
-    Hollow(Cost),
+    Hollow,
     #[cfg(feature = "custom")]
     /// salvage [cost]
     Salvage(Cost),
