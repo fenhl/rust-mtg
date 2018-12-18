@@ -374,13 +374,13 @@ impl<'de> Deserialize<'de> for Rarity {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let s = String::deserialize(deserializer)?;
         Ok(match s.as_str() {
-            "Basic Land" => Rarity::Land,
+            "Basic Land" | "basic" => Rarity::Land,
             "Common" | "common" => Rarity::Common,
             "Uncommon" | "uncommon" => Rarity::Uncommon,
             "Rare" | "rare" => Rarity::Rare,
             "Mythic Rare" | "mythic" => Rarity::Mythic,
             "Special" => Rarity::Special,
-            s => { return Err(D::Error::unknown_variant(s, &["Basic Land", "Common", "common", "Uncommon", "uncommon", "Rare", "rare", "Mythic Rare", "mythic", "Special"])); }
+            s => { return Err(D::Error::unknown_variant(s, &["Basic Land", "basic", "Common", "common", "Uncommon", "uncommon", "Rare", "rare", "Mythic Rare", "mythic", "Special"])); }
         })
     }
 }
