@@ -34,7 +34,11 @@ use num::{
     BigUint
 };
 use regex::Regex;
-use serde_derive::Deserialize;
+use serde::{
+    Deserialize,
+    Deserializer,
+    de::Error
+};
 use serde_json::{
     Value as Json,
     json
@@ -325,10 +329,9 @@ impl PartialOrd for ReleaseDate {
 }
 
 /// The [rarity](https://mtg.gamepedia.com/Rarity) of a card printing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Rarity {
     /// Basic land rarity. Not to be confused with the “basic” supertype, the “land” card type, or the `Card::is_basic` property.
-    #[serde(rename = "Basic Land")]
     Land,
     #[allow(missing_docs)]
     Common,
@@ -337,7 +340,6 @@ pub enum Rarity {
     #[allow(missing_docs)]
     Rare,
     #[allow(missing_docs)]
-    #[serde(rename = "Mythic Rare")]
     Mythic,
     /// Special rarity, such as timeshifted cards in *Time Spiral*.
     Special
@@ -365,6 +367,21 @@ impl Rarity {
             Rarity::Mythic => 'M',
             Rarity::Special => 'S'
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for Rarity {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        Ok(match s.as_str() {
+            "Basic Land" => Rarity::Land,
+            "Common" | "common" => Rarity::Common,
+            "Uncommon" | "uncommon" => Rarity::Uncommon,
+            "Rare" | "rare" => Rarity::Rare,
+            "Mythic Rare" | "mythic" => Rarity::Mythic,
+            "Special" => Rarity::Special,
+            s => { return Err(D::Error::unknown_variant(s, &["Basic Land", "Common", "common", "Uncommon", "uncommon", "Rare", "rare", "Mythic Rare", "mythic", "Special"])); }
+        })
     }
 }
 
