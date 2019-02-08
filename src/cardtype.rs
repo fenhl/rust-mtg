@@ -684,6 +684,8 @@ type_enum! {
 
         /// Canister
         Canister("Canister"),
+        /// Petal
+        Petal("Petal"),
         /// Relic
         Relic("Relic"),
         /// Structure
@@ -854,6 +856,8 @@ type_enum! {
 
         custom
 
+        /// Cypress
+        Cypress("Cypress"),
         /// Evis
         Evis("Evis"),
         /// Farajo
@@ -866,12 +870,14 @@ type_enum! {
         Gaile("Gaile"),
         /// Gozani
         Gozani("Gozani"),
+        /// Helena
+        Helena("Helena"),
         /// Hohoja
         Hohoja("Hohoja"),
-        /// Hupiri
-        Hupiri("Hupiri"),
         /// L3-T
         L3T("L3-T"),
+        /// Lazaire
+        Lazaire("Lazaire"),
         /// Luma
         Luma("Luma"),
         /// Nibinem
