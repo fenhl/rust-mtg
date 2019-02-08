@@ -1127,7 +1127,7 @@ impl KeywordAbility {
             (plain "invocation" => Invocation),
             (cost "resurrect" => Resurrect),
             (plain "desperation" => Desperation),
-            (cost "hollow" => Hollow),
+            (plain "hollow" => Hollow),
             (cost "salvage" => Salvage),
             (cost "seal" => Seal),
             (number_cost "secure" => Secure),
