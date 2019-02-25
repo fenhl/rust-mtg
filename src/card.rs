@@ -1491,6 +1491,7 @@ impl Card {
             CardData::RawJson { ref printings } => printings[0].get("loyalty").map(|loy| match *loy {
                 Json::Null => Number::X,
                 Json::Number(ref n) => Number::from(n.as_u64().expect(&format!("invalid starting loyalty: {}", n))),
+                Json::String(ref s) => if s == "X" { Number::X } else { s.parse().expect(&format!("invalid starting loyalty: {}", s)) },
                 ref v => { panic!("invalid starting loyalty: {}", v); }
             }),
             CardData::Parsed { ref loyalty, .. } => loyalty.clone()
