@@ -1400,6 +1400,13 @@ impl Card {
                 "Temple of Aclazotz" => DfcSymbol::Compass,
                 name => { panic!("unexpected V17 DFC: {}", name); }
             },
+            "pLPA" => match &self.name[..] {
+                "Ludevic's Abomination" |
+                "Ludevic's Test Subject" |
+                "Mondronen Shaman" |
+                "Tovolar's Magehunter" => DfcSymbol::Sun,
+                name => { panic!("unexpected pLPA DFC: {}", name); }
+            },
             "pPRE" => match &self.name[..] {
                 "Archdemon of Greed" |
                 "Howlpack Alpha" |
