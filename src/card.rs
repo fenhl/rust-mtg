@@ -1399,7 +1399,14 @@ impl Card {
                 "Arguel's Blood Fast" |
                 "Temple of Aclazotz" => DfcSymbol::Compass,
                 name => { panic!("unexpected V17 DFC: {}", name); }
-            }
+            },
+            "pPRE" => match &self.name[..] {
+                "Archdemon of Greed" |
+                "Howlpack Alpha" |
+                "Mayor of Avabruck" |
+                "Ravenous Demon" => DfcSymbol::Sun,
+                name => { panic!("unexpected pPRE DFC: {}", name); }
+            },
             set => { panic!("unexpected DFC in set {}", set); }
         }
     }
