@@ -1405,6 +1405,16 @@ impl Card {
                 "Howlpack Alpha" |
                 "Mayor of Avabruck" |
                 "Ravenous Demon" => DfcSymbol::Sun,
+                "Chandra, Fire of Kaladesh" |
+                "Chandra, Roaring Flame" |
+                "Gideon, Battle-Forged" |
+                "Jace, Telepath Unbound" |
+                "Jace, Vryn's Prodigy" |
+                "Kytheon, Hero of Akros" |
+                "Liliana, Defiant Necromancer" |
+                "Liliana, Heretical Healer" |
+                "Nissa, Sage Animist" |
+                "Nissa, Vastwood Seer" => DfcSymbol::Spark,
                 name => { panic!("unexpected pPRE DFC: {}", name); }
             },
             set => { panic!("unexpected DFC in set {}", set); }
