@@ -1442,7 +1442,7 @@ impl Card {
         match &set_code[..] {
             "TSL" => DfcSymbol::Chalice,
             "VLN" => DfcSymbol::Spark,
-            "RAK" => DfcSymbol::Sun,
+            "RAK" | "EAU" => DfcSymbol::Sun,
             _ => self.dfc_symbol()
         }
     }

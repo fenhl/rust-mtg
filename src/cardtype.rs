@@ -684,8 +684,6 @@ type_enum! {
 
         /// Canister
         Canister("Canister"),
-        /// Petal
-        Petal("Petal"),
         /// Relic
         Relic("Relic"),
         /// Structure
