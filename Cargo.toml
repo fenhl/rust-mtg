@@ -8,6 +8,7 @@ edition = "2018"
 custom = []
 
 [dependencies]
+caseless = "*"
 num = "*"
 regex = "1"
 reqwest = "*"

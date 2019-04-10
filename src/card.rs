@@ -29,6 +29,7 @@ use std::{
     },
     thread
 };
+use caseless::default_case_fold_str;
 use num::{
     BigInt,
     BigUint
@@ -63,13 +64,6 @@ use crate::{
 };
 
 type Obj = ::serde_json::Map<String, Json>;
-
-/// A database of cards.
-#[derive(Debug, Clone)]
-pub struct Db {
-    cards: BTreeMap<String, Card>,
-    set_codes: HashSet<String>
-}
 
 /// Used in `DbError::ParseSet` as additional debugging information.
 #[derive(Debug)]
@@ -131,6 +125,14 @@ impl From<::serde_json::Error> for DbError {
     }
 }
 
+/// A database of cards.
+#[derive(Debug, Clone)]
+pub struct Db {
+    cards: BTreeMap<String, Card>,
+    cards_uncased: BTreeMap<String, Card>,
+    set_codes: HashSet<String>
+}
+
 impl Db {
     /// Downloads the current version of MTG JSON from their website and converts it into a `Db`.
     pub fn download() -> Result<Db, DbError> {
@@ -142,6 +144,7 @@ impl Db {
     pub fn empty() -> Db {
         Db {
             cards: BTreeMap::default(),
+            cards_uncased: BTreeMap::default(),
             set_codes: HashSet::default()
         }
     }
@@ -153,6 +156,7 @@ impl Db {
         for (set_code, set) in sets {
             db.register_set(set_code, set)?;
         }
+        db.gen_uncased();
         db.start_parser_thread();
         Ok(db)
     }
@@ -168,6 +172,7 @@ impl Db {
             let set = ::serde_json::from_reader(&mut set_file)?;
             db.register_set(&set_code[..set_code.len() - 5], &set)?;
         }
+        db.gen_uncased();
         db.start_parser_thread();
         Ok(db)
     }
@@ -179,33 +184,15 @@ impl Db {
         self.cards.get(card_name).cloned()
     }
 
-    /// Returns cards whose name is similar to the `search_term` parameter. This tries the following matching algorithms, in order:
-    ///
-    /// * Exact match
-    /// * **(not implemented)** Initials (e.g. BoP for Birds of Paradise)
-    /// * **(not implemented)** Card names starting with the search term, with a preference for cards with fewer apostrophes in their names (so that a legend is preferred over cards using the legend's name)
-    /// * **(not implemented)** Card names ending with the search term
-    /// * **(not implemented)** Card names containing the search term
-    /// * **(not implemented)** Card names containing each word in the search term
-    /// * **(not implemented)** Card names with the lowest [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance) to the search term
-    ///
-    /// All matching algorithms are case-sensitive. This may be changed in the future.
-    ///
-    /// If `set_code` is given, the search is restricted to that set.
-    pub fn card_fuzzy(&self, search_term: &str, set_code: Option<&str>) -> Vec<Card> {
-        //TODO make all algorithms case-insensitive
-        // exact match
-        if let Some(card) = self.card(search_term) {
-            let matches_set = set_code.map_or(true, |set_code| card.printings_unsorted().into_iter().any(|printing| &printing.set == set_code));
-            if matches_set { return vec![card]; }
+    /// Returns a card whose name matches the given string when compared case-insensitively.
+    pub fn card_fuzzy(&self, card_name: &str) -> Option<Card> {
+        self.cards_uncased.get(&default_case_fold_str(card_name)).cloned()
+    }
+
+    fn gen_uncased(&mut self) {
+        for (card_name, card) in &self.cards {
+            self.cards_uncased.insert(default_case_fold_str(card_name), card.clone());
         }
-        //TODO initials
-        //TODO starts_with
-        //TODO ends_with
-        //TODO contains
-        //TODO contains all words
-        //TODO Levenshtein
-        Vec::default()
     }
 
     fn register_set(&mut self, set_code: &str, set: &Json) -> Result<(), DbError> {
