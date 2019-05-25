@@ -773,6 +773,8 @@ type_enum! {
         Dack("Dack"),
         /// Daretti
         Daretti("Daretti"),
+        /// Davriel
+        Davriel("Davriel"),
         /// Domri
         Domri("Domri"),
         /// Dovin
@@ -795,6 +797,8 @@ type_enum! {
         Jaya("Jaya"),
         /// Karn
         Karn("Karn"),
+        /// Kasmina
+        Kasmina("Kasmina"),
         /// Kaya
         Kaya("Kaya"),
         /// Kiora
@@ -827,6 +831,8 @@ type_enum! {
         Tamiyo("Tamiyo"),
         /// Teferi
         Teferi("Teferi"),
+        /// Teyo
+        Teyo("Teyo"),
         /// Tezzeret
         Tezzeret("Tezzeret"),
         /// Tibalt
@@ -932,6 +938,8 @@ type_enum! {
         Archer("Archer"),
         /// Archon
         Archon("Archon"),
+        /// Army
+        Army("Army"),
         /// Artificer
         Artificer("Artificer"),
         /// Assassin
