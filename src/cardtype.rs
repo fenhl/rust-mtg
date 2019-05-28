@@ -682,8 +682,12 @@ type_enum! {
 
         custom
 
+        /// Bullet
+        Bullet("Bullet"),
         /// Canister
         Canister("Canister"),
+        /// Monument
+        Monument("Monument"),
         /// Relic
         Relic("Relic"),
         /// Structure
@@ -704,6 +708,13 @@ type_enum! {
         Saga("Saga"),
         /// Shrine
         Shrine("Shrine")
+
+        custom
+
+        /// Cloister
+        Cloister("Cloister"),
+        /// Discovery
+        Discovery("Discovery")
     } part enchantment_types iter EnchantmentTypeIter
 }
 
@@ -862,6 +873,8 @@ type_enum! {
 
         /// Cypress
         Cypress("Cypress"),
+        /// Eli
+        Eli("Eli"),
         /// Evis
         Evis("Evis"),
         /// Farajo
@@ -882,6 +895,8 @@ type_enum! {
         L3T("L3-T"),
         /// Lazaire
         Lazaire("Lazaire"),
+        /// Lhosei
+        Lhosei("Lhosei"),
         /// Luma
         Luma("Luma"),
         /// Nibinem
@@ -894,6 +909,8 @@ type_enum! {
         Roselyn("Roselyn"),
         /// Sarasa
         Sarasa("Sarasa"),
+        /// Shala
+        Shala("Shala"),
         /// Sobki
         Sobki("Sobki"),
         /// Talya
