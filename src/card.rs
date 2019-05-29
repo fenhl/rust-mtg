@@ -417,7 +417,13 @@ pub enum DfcSymbol {
     Compass,
     #[cfg(feature = "custom")]
     /// The chalice/flame symbols used in *Tesla*.
-    Chalice
+    Chalice,
+    #[cfg(feature = "custom")]
+    /// The mortal/god symbols used in *Scriptures of Urshad*, with the exception of Shala Na.
+    MortalGod,
+    #[cfg(feature = "custom")]
+    /// The mortal/planeswalker symbols used on Shala Na in *Scriptures of Urshad*.
+    MortalPlaneswalker
 }
 
 /// The layout of a card, including other parts if any.
@@ -1430,6 +1436,10 @@ impl Card {
             "TSL" => DfcSymbol::Chalice,
             "VLN" => DfcSymbol::Spark,
             "RAK" | "EAU" => DfcSymbol::Sun,
+            "SOU" => match &self.name[..] {
+                "Shala Na, Urshadi Apostate" | "Shala Na, God-Chosen" => DfcSymbol::MortalPlaneswalker,
+                _ => DfcSymbol::MortalGod
+            },
             _ => self.dfc_symbol()
         }
     }
