@@ -199,7 +199,11 @@ impl Db {
         use crate::card::ParseStep::*;
 
         let set = if let Some(set) = set.as_object() { set } else { return Err(DbError::ParseSet { step: SetObject, set_code: set_code.into() }); };
-        if set.get("type").and_then(|set_type| set_type.as_str()) == Some("errata") { return Ok(()); } // ignore errata sets //TODO apply errata according to set priorities
+        match set.get("type").and_then(|set_type| set_type.as_str()) {
+            Some("errata") => { return Ok(()); } // ignore errata sets //TODO apply errata according to set priorities
+            Some("token") => { return Ok(()); } // ignore token sets and Hero's Path
+            _ => {}
+        }
         let set_border = set.get("border").and_then(|border| border.as_str()).unwrap_or("black");
         let set_cards = if let Some(cards) = set.get("cards").and_then(|cards| cards.as_array()) { cards } else { return Err(DbError::ParseSet { step: SetCards, set_code: set_code.into() }); };
         let set_release_date = if let Some(date) = set.get("releaseDate") { date } else { return Err(DbError::ParseSet { step: SetReleaseDate, set_code: set_code.into() }); };
