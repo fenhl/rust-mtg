@@ -836,6 +836,8 @@ type_enum! {
         Samut("Samut"),
         /// Sarkhan
         Sarkhan("Sarkhan"),
+        /// Serra
+        Serra("Serra"),
         /// Sorin
         Sorin("Sorin"),
         /// Tamiyo
@@ -862,6 +864,8 @@ type_enum! {
         Will("Will"),
         /// Windgrace
         Windgrace("Windgrace"),
+        /// Wrenn
+        Wrenn("Wrenn"),
         /// Xenagos
         Xenagos("Xenagos"),
         /// Yanggu
