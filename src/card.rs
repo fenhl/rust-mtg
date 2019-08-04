@@ -136,7 +136,7 @@ pub struct Db {
 impl Db {
     /// Downloads the current version of MTG JSON from their website and converts it into a `Db`.
     pub fn download() -> Result<Db, DbError> {
-        let response = ::reqwest::get("http://mtgjson.com/json/AllSets.json")?;
+        let response = ::reqwest::get("https://mtgjson.com/json/AllSets.json")?;
         Db::from_mtg_json(::serde_json::from_reader(response)?)
     }
 
