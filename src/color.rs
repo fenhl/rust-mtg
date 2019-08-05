@@ -1,23 +1,34 @@
 //! This module contains two types: `Color`, a simple enum which represents a single color, and `ColorSet`, which represents a set of zero or more colors.
 
-use std::{
-    cmp::Ordering,
-    iter::FromIterator,
-    ops::{
-        BitOr,
-        BitOrAssign
+use {
+    std::{
+        cmp::Ordering,
+        iter::FromIterator,
+        ops::{
+            BitOr,
+            BitOrAssign
+        },
+        str::FromStr
     },
-    str::FromStr
+    serde_derive::{
+        Deserialize,
+        Serialize
+    }
 };
 
 /// This enum represents a single color.
 #[allow(missing_docs)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum Color {
+    #[serde(alias = "white", alias = "W", alias = "w")]
     White,
+    #[serde(alias = "blue", alias = "U", alias = "u")]
     Blue,
+    #[serde(alias = "black", alias = "B", alias = "b")]
     Black,
+    #[serde(alias = "red", alias = "R", alias = "r")]
     Red,
+    #[serde(alias = "green", alias = "G", alias = "g")]
     Green
 }
 

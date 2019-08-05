@@ -1321,8 +1321,9 @@ impl Card {
 
     /// If the card has a color indicator, returns it.
     ///
-    /// Since MTG JSON does not store color indicator information, this is computed from the card's mana cost and colors.
+    /// Since older versions of MTG JSON did not store color indicator information, this is computed from the card's mana cost and colors.
     pub fn color_indicator(&self) -> Option<ColorSet> {
+        //TODO read from MTG JSON if available
         let actual_colors = self.colors();
         if actual_colors != ColorSet::default() {
             let intrinsic_colors = self.mana_cost().map(|cost| ColorSet::from(cost)).unwrap_or_default();
