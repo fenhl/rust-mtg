@@ -78,7 +78,7 @@ impl FromStr for Cost {
 }
 
 /// A mana cost like `{1}{G}`.
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct ManaCost {
     generic: BigUint,
     colorless: BigUint,
@@ -306,6 +306,9 @@ impl fmt::Display for ManaCost {
         Ok(())
     }
 }
+
+serde_plain::derive_deserialize_from_str!(ManaCost, "valid mana cost");
+serde_plain::derive_serialize_from_display!(ManaCost);
 
 impl<'a> Add<ManaCost> for &'a ManaCost {
     type Output = ManaCost;
