@@ -7,6 +7,7 @@ use {
             BTreeSet,
             HashSet
         },
+        convert::TryFrom,
         iter::FromIterator,
         ops::{
             BitOr,
@@ -543,6 +544,15 @@ impl ColorSet {
         }
     }
 
+    /// Returns the number of colors in this set.
+    pub fn len(&self) -> u8 {
+        (if self.white { 1 } else { 0 })
+        + if self.blue { 1 } else { 0 }
+        + if self.black { 1 } else { 0 }
+        + if self.red { 1 } else { 0 }
+        + if self.green { 1 } else { 0 }
+    }
+
     /// Returns the component colors in the order of white, blue, black, red, green (e.g. “blue, green” or “white, black, red”).
     ///
     /// Note that this is not how colors are usually ordered, see `canonical_order` for that. However, this method can be useful when colors always need to be in the same relative order.
@@ -612,5 +622,39 @@ impl BitOr<ColorSet> for ColorSet {
 impl BitOrAssign for ColorSet {
     fn bitor_assign(&mut self, rhs: ColorSet) {
         *self = &*self | rhs;
+    }
+}
+
+
+/// Empty and single-color sets are converted successfully. For other color sets, the number of colors is returned as the error.
+impl TryFrom<ColorSet> for Option<Color> {
+    type Error = u8;
+
+    fn try_from(colorset: ColorSet) -> Result<Option<Color>, u8> {
+        match (colorset.white, colorset.blue, colorset.black, colorset.red, colorset.green) {
+            (false, false, false, false, false) => Ok(None),
+            (true, false, false, false, false) => Ok(Some(Color::White)),
+            (false, true, false, false, false) => Ok(Some(Color::Blue)),
+            (false, false, true, false, false) => Ok(Some(Color::Black)),
+            (false, false, false, true, false) => Ok(Some(Color::Red)),
+            (false, false, false, false, true) => Ok(Some(Color::Green)),
+            _ => Err(colorset.len())
+        }
+    }
+}
+
+/// Single-color sets are converted successfully. For other color sets, the number of colors is returned as the error.
+impl TryFrom<ColorSet> for Color {
+    type Error = u8;
+
+    fn try_from(colorset: ColorSet) -> Result<Color, u8> {
+        match (colorset.white, colorset.blue, colorset.black, colorset.red, colorset.green) {
+            (true, false, false, false, false) => Ok(Color::White),
+            (false, true, false, false, false) => Ok(Color::Blue),
+            (false, false, true, false, false) => Ok(Color::Black),
+            (false, false, false, true, false) => Ok(Color::Red),
+            (false, false, false, false, true) => Ok(Color::Green),
+            _ => Err(colorset.len())
+        }
     }
 }
