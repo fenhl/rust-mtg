@@ -3,6 +3,10 @@
 use {
     std::{
         cmp::Ordering,
+        collections::{
+            BTreeSet,
+            HashSet
+        },
         iter::FromIterator,
         ops::{
             BitOr,
@@ -66,7 +70,8 @@ impl FromStr for Color {
 ///
 /// `PartialOrd` is also implemented, and is particularly useful for the Commander format: if `card_a.color_identity() <= card_b.color_identity()`, then `card_a` can be included in a deck which runs `card_b` as its commander.
 #[allow(missing_docs)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
+#[serde(from = Vec<Color>)]
 pub struct ColorSet {
     pub white: bool,
     pub blue: bool,
@@ -415,9 +420,27 @@ impl From<[bool; 5]> for ColorSet {
     }
 }
 
-impl<I: Into<Color>> FromIterator<I> for ColorSet {
-    fn from_iter<T: IntoIterator<Item = I>>(iter: T) -> ColorSet {
+impl<C: Into<Color>> FromIterator<C> for ColorSet {
+    fn from_iter<I: IntoIterator<Item = C>>(iter: I) -> ColorSet {
         iter.into_iter().fold(ColorSet::default(), |cs, item| cs | item.into().into())
+    }
+}
+
+impl<C: Into<Color>> From<Vec<C>> for ColorSet {
+    fn from(v: Vec<C>) -> ColorSet {
+        ColorSet::from_iter(v)
+    }
+}
+
+impl<C: Into<Color>> From<BTreeSet<C>> for ColorSet {
+    fn from(v: BTreeSet<C>) -> ColorSet {
+        ColorSet::from_iter(v)
+    }
+}
+
+impl<C: Into<Color>> From<HashSet<C>> for ColorSet {
+    fn from(v: HashSet<C>) -> ColorSet {
+        ColorSet::from_iter(v)
     }
 }
 
