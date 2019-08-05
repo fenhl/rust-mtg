@@ -519,6 +519,18 @@ impl ColorSet {
             (true, true, true, true, true) => vec![Color::White, Color::Blue, Color::Black, Color::Red, Color::Green]
         }
     }
+
+    /// Returns the component colors in the order of white, blue, black, red, green (e.g. “blue, green” or “white, black, red”).
+    ///
+    /// Note that this is not how colors are usually ordered, see `canonical_order` for that. However, this method can be useful when colors always need to be in the same relative order.
+    pub fn wubrg_order(&self) -> Vec<Color> {
+        if self.white { Some(Color::White) } else { None }.into_iter()
+            .chain(if self.blue { Some(Color::Blue) } else { None })
+            .chain(if self.black { Some(Color::Black) } else { None })
+            .chain(if self.red { Some(Color::Red) } else { None })
+            .chain(if self.green { Some(Color::Green) } else { None })
+            .collect()
+    }
 }
 
 /// For two `ColorSet`s `a` and `b`, `a <= b` means that all colors in `a` are also in `b`.
