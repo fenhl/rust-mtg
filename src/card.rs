@@ -1,65 +1,66 @@
 //! Contains the `Card` type, which represents a *Magic* card.
 
-use std::{
-    cmp::Ordering,
-    collections::{
-        HashMap,
-        HashSet,
-        btree_map::{
+use {
+    std::{
+        cmp::Ordering,
+        collections::{
+            HashMap,
+            HashSet,
+            btree_map::{
+                self,
+                BTreeMap
+            }
+        },
+        ffi::OsString,
+        fmt,
+        fs::{
             self,
-            BTreeMap
+            File
+        },
+        hash::{
+            Hash,
+            Hasher
+        },
+        io,
+        path::Path,
+        str::FromStr,
+        sync::{
+            Arc,
+            RwLock
+        },
+        thread
+    },
+    caseless::default_case_fold_str,
+    num::{
+        BigInt,
+        BigUint
+    },
+    regex::Regex,
+    serde_derive::{
+        Deserialize,
+        Serialize
+    },
+    serde_json::{
+        Value as Json,
+        json
+    },
+    topological_sort::TopologicalSort,
+    crate::{
+        cardtype::{
+            CardType,
+            LandType,
+            Subtype,
+            Supertype,
+            TypeLine
+        },
+        color::{
+            Color,
+            ColorSet
+        },
+        cost::{
+            Cost,
+            ManaCost
         }
-    },
-    ffi::OsString,
-    fmt,
-    fs::{
-        self,
-        File
-    },
-    hash::{
-        Hash,
-        Hasher
-    },
-    io,
-    path::Path,
-    str::FromStr,
-    sync::{
-        Arc,
-        RwLock
-    },
-    thread
-};
-use caseless::default_case_fold_str;
-use num::{
-    BigInt,
-    BigUint
-};
-use regex::Regex;
-use serde::{
-    Deserialize,
-    Deserializer,
-    de::Error
-};
-use serde_json::{
-    Value as Json,
-    json
-};
-use topological_sort::TopologicalSort;
-use crate::{
-    cardtype::{
-        CardType,
-        LandType,
-        Subtype,
-        Supertype,
-        TypeLine
-    },
-    color::{
-        Color,
-        ColorSet
-    },
-    cost::{
-        Cost,
-        ManaCost
     }
 };
 
@@ -320,18 +321,24 @@ impl PartialOrd for ReleaseDate {
 }
 
 /// The [rarity](https://mtg.gamepedia.com/Rarity) of a card printing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Rarity {
+    #[serde(rename = "basic", alias = "Basic Land")]
     /// Basic land rarity. Not to be confused with the “basic” supertype, the “land” card type, or the `Card::is_basic` property.
     Land,
+    #[serde(rename = "common", alias = "Common")]
     #[allow(missing_docs)]
     Common,
+    #[serde(rename = "uncommon", alias = "Uncommon")]
     #[allow(missing_docs)]
     Uncommon,
+    #[serde(rename = "rare", alias = "Rare")]
     #[allow(missing_docs)]
     Rare,
+    #[serde(rename = "mythic", alias = "Mythic Rare")]
     #[allow(missing_docs)]
     Mythic,
+    #[serde(rename = "special", alias = "Special")]
     /// Special rarity, such as timeshifted cards in *Time Spiral*.
     Special
 }
@@ -358,21 +365,6 @@ impl Rarity {
             Rarity::Mythic => 'M',
             Rarity::Special => 'S'
         }
-    }
-}
-
-impl<'de> Deserialize<'de> for Rarity {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let s = String::deserialize(deserializer)?;
-        Ok(match s.as_str() {
-            "Basic Land" | "basic" => Rarity::Land,
-            "Common" | "common" => Rarity::Common,
-            "Uncommon" | "uncommon" => Rarity::Uncommon,
-            "Rare" | "rare" => Rarity::Rare,
-            "Mythic Rare" | "mythic" => Rarity::Mythic,
-            "Special" => Rarity::Special,
-            s => { return Err(D::Error::unknown_variant(s, &["Basic Land", "basic", "Common", "common", "Uncommon", "uncommon", "Rare", "rare", "Mythic Rare", "mythic", "Special"])); }
-        })
     }
 }
 
