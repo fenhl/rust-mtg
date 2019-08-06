@@ -72,7 +72,7 @@ impl FromStr for Color {
 /// `PartialOrd` is also implemented, and is particularly useful for the Commander format: if `card_a.color_identity() <= card_b.color_identity()`, then `card_a` can be included in a deck which runs `card_b` as its commander.
 #[allow(missing_docs)]
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
-#[serde(from = Vec<Color>)]
+#[serde(from = "Vec<Color>")]
 pub struct ColorSet {
     pub white: bool,
     pub blue: bool,
