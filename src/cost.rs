@@ -263,7 +263,7 @@ impl fmt::Display for ManaCost {
         "{U/B}".repeat(self.hybrid_blue_black.to_usize().ok_or(fmt::Error)?).fmt(f)?;
         "{B/R}".repeat(self.hybrid_black_red.to_usize().ok_or(fmt::Error)?).fmt(f)?;
         "{R/G}".repeat(self.hybrid_red_green.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        "{R/W}".repeat(self.hybrid_green_white.to_usize().ok_or(fmt::Error)?).fmt(f)?;
+        "{G/W}".repeat(self.hybrid_green_white.to_usize().ok_or(fmt::Error)?).fmt(f)?;
         "{W/B}".repeat(self.hybrid_white_black.to_usize().ok_or(fmt::Error)?).fmt(f)?;
         "{U/R}".repeat(self.hybrid_blue_red.to_usize().ok_or(fmt::Error)?).fmt(f)?;
         "{B/G}".repeat(self.hybrid_black_green.to_usize().ok_or(fmt::Error)?).fmt(f)?;
