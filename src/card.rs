@@ -31,11 +31,13 @@ use {
         thread
     },
     caseless::default_case_fold_str,
+    futures::compat::Future01CompatExt as _,
     num::{
         BigInt,
         BigUint
     },
     regex::Regex,
+    reqwest::r#async::Client as ReqwestClient,
     serde_derive::{
         Deserialize,
         Serialize
@@ -136,9 +138,19 @@ pub struct Db {
 
 impl Db {
     /// Downloads the current version of MTG JSON from their website and converts it into a `Db`.
-    pub fn download() -> Result<Db, DbError> {
-        let response = ::reqwest::get("https://mtgjson.com/json/AllSets.json")?;
-        Db::from_mtg_json(::serde_json::from_reader(response)?)
+    pub async fn download_async(client: ReqwestClient) -> Result<Db, DbError> {
+        let mut response = client.get("https://mtgjson.com/json/AllSets.json")
+            .send()
+            .compat()
+            .await?
+            .error_for_status()?;
+        Db::from_mtg_json(response.json().compat().await?)
+    }
+
+    /// Downloads the current version of MTG JSON from their website and converts it into a `Db`.
+    pub fn download_sync() -> Result<Db, DbError> {
+        let mut response = ::reqwest::get("https://mtgjson.com/json/AllSets.json")?;
+        Db::from_mtg_json(response.json()?)
     }
 
     /// Returns a database without any cards in it.
@@ -1727,7 +1739,7 @@ mod tests {
 
     #[test]
     fn test_indicators() -> Result<(), DbError> {
-        let db = Db::download()?;
+        let db = Db::download_sync()?;
         test_indicator(&db, "Dryad Arbor", ColorSet::green());
         test_indicator(&db, "Nicol Bolas, the Arisen", ColorSet::grixis());
         test_indicator(&db, "Transguild Courier", ColorSet::rainbow());

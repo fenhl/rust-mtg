@@ -18,3 +18,7 @@ serde_json = "1"
 serde_plain = "*"
 topological-sort = "*"
 wrapped_enum = "*"
+
+[dependencies.futures-preview]
+version = "0.3.0-alpha.18"
+features = ["async-await", "compat", "nightly"]
