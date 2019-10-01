@@ -673,6 +673,8 @@ type_enum! {
         Contraption("Contraption"),
         /// Equipment
         Equipment("Equipment"),
+        /// Food
+        Food("Food"),
         /// Fortification
         Fortification("Fortification"),
         /// Treasure
@@ -826,6 +828,8 @@ type_enum! {
         Nissa("Nissa"),
         /// Nixilis
         Nixilis("Nixilis"),
+        /// Oko
+        Oko("Oko"),
         /// Ral
         Ral("Ral"),
         /// Rowan
@@ -933,6 +937,8 @@ type_enum! {
 type_enum! {
     /// An [instant](https://mtg.gamepedia.com/Instant) or [sorcery](https://mtg.gamepedia.com/Sorcery) subtype.
     pub enum SpellType {
+        /// Adventure
+        Adventure("Adventure"),
         /// Arcane
         Arcane("Arcane"),
         /// Trap
@@ -1209,6 +1215,8 @@ type_enum! {
         Monkey("Monkey"),
         /// Moonfolk
         Moonfolk("Moonfolk"),
+        /// Mouse
+        Mouse("Mouse"),
         /// Mutant
         Mutant("Mutant"),
         /// Myr
@@ -1227,6 +1235,8 @@ type_enum! {
         Nightstalker("Nightstalker"),
         /// Ninja
         Ninja("Ninja"),
+        /// Noble
+        Noble("Noble"),
         /// Noggle
         Noggle("Noggle"),
         /// Nomad
@@ -1253,6 +1263,8 @@ type_enum! {
         Oyster("Oyster"),
         /// Pangolin
         Pangolin("Pangolin"),
+        /// Peasant
+        Peasant("Peasant"),
         /// Pegasus
         Pegasus("Pegasus"),
         /// Pentavite
@@ -1399,6 +1411,8 @@ type_enum! {
         Volver("Volver"),
         /// Wall
         Wall("Wall"),
+        /// Warlock
+        Warlock("Warlock"),
         /// Warrior
         Warrior("Warrior"),
         /// Weird

@@ -458,6 +458,13 @@ pub enum Layout {
         bottom: Card,
         /// The melded permanent.
         back: Card
+    },
+    /// An adventurer card.
+    Adventure {
+        /// The main part, usually a creature.
+        creature: Card,
+        /// The Adventure spell part.
+        adventure: Card
     }
 }
 
@@ -1444,7 +1451,8 @@ impl Card {
     /// Returns `true` for:
     ///
     /// *   The right half of a split card,
-    /// *   The flipped version of a flip card, and
+    /// *   The flipped version of a flip card,
+    /// *   The Adventure part of an adventurer card, and
     /// *   The back face of a double-faced or meld card.
     pub fn is_alt(&self) -> bool {
         match *self.data.read().unwrap() {
@@ -1461,7 +1469,8 @@ impl Card {
                 Layout::Split { ref right, .. } => self == right,
                 Layout::Flip { ref flipped, .. } => self == flipped,
                 Layout::DoubleFaced { ref back, .. } => self == back,
-                Layout::Meld { ref back, .. } => self == back
+                Layout::Meld { ref back, .. } => self == back,
+                Layout::Adventure { ref adventure, .. } => self == adventure
             }
         }
     }
@@ -1495,6 +1504,10 @@ impl Card {
                         top: names[0].clone(),
                         bottom: names[1].clone(),
                         back: names[2].clone()
+                    },
+                    "adventure" => Layout::Adventure {
+                        creature: names[0].clone(),
+                        adventure: names[1].clone()
                     },
                     _ => Layout::Normal
                 }
