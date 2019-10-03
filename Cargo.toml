@@ -9,6 +9,7 @@ custom = []
 
 [dependencies]
 caseless = "*"
+derive_more = "*"
 num = "*"
 regex = "1"
 reqwest = "*"

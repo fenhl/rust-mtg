@@ -31,6 +31,7 @@ use {
         thread
     },
     caseless::default_case_fold_str,
+    derive_more::From,
     num::{
         BigInt,
         BigUint
@@ -81,7 +82,7 @@ pub enum ParseStep {
 }
 
 /// The JSON was not a valid MTG JSON database.
-#[derive(Debug)]
+#[derive(Debug, From)]
 pub enum DbError {
     /// The MTG JSON download failed
     Download(::reqwest::Error),
@@ -99,30 +100,6 @@ pub enum DbError {
         step: ParseStep,
         /// The set code of the set where the error occurred
         set_code: String
-    }
-}
-
-impl From<OsString> for DbError {
-    fn from(e: OsString) -> DbError {
-        DbError::Filename(e)
-    }
-}
-
-impl From<io::Error> for DbError {
-    fn from(e: io::Error) -> DbError {
-        DbError::Io(e)
-    }
-}
-
-impl From<::reqwest::Error> for DbError {
-    fn from(e: ::reqwest::Error) -> DbError {
-        DbError::Download(e)
-    }
-}
-
-impl From<::serde_json::Error> for DbError {
-    fn from(e: ::serde_json::Error) -> DbError {
-        DbError::Json(e)
     }
 }
 

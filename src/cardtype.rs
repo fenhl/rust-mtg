@@ -1,25 +1,27 @@
 //! This module contains Rust types representing Magic card supertypes, types, and subtypes.
 
-use std::{
-    cmp::Ordering,
-    collections::HashSet,
-    fmt,
-    iter,
-    mem,
-    ops::{
-        BitOr,
-        BitOrAssign
+use {
+    std::{
+        cmp::Ordering,
+        collections::HashSet,
+        fmt,
+        iter,
+        mem,
+        ops::{
+            BitOr,
+            BitOrAssign
+        },
+        str::FromStr
     },
-    str::FromStr
-};
-use wrapped_enum::wrapped_enum;
-use crate::color::{
-    Color,
-    ColorSet
+    derive_more::From,
+    crate::color::{
+        Color,
+        ColorSet
+    }
 };
 
 /// An error encountered while parsing a string into a `TypeLine`.
-#[derive(Debug)]
+#[derive(Debug, From)]
 pub enum ParseError {
     /// A word to the left of the dash was not recognized as a supertype or card type.
     UnknownSupertypeOrCardType(String),
@@ -50,12 +52,6 @@ pub enum InvalidTypeLineError {
     Creature,
     /// Attempted to create a type line with planar types but without the type “Plane”.
     Planar
-}
-
-impl From<InvalidTypeLineError> for ParseError {
-    fn from(e: InvalidTypeLineError) -> ParseError {
-        ParseError::InvalidComponents(e)
-    }
 }
 
 /// A type line, consisting of supertypes, types, and/or subtypes.
@@ -1555,25 +1551,17 @@ type_enum! {
     } part planar_types iter PlanarTypeIter
 }
 
-wrapped_enum! {
-    /// A subtype of any card type.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-    pub enum Subtype {
-        #[allow(missing_docs)]
-        Artifact(ArtifactType),
-        #[allow(missing_docs)]
-        Enchantment(EnchantmentType),
-        #[allow(missing_docs)]
-        Land(LandType),
-        #[allow(missing_docs)]
-        Planeswalker(PlaneswalkerType),
-        #[allow(missing_docs)]
-        Spell(SpellType),
-        #[allow(missing_docs)]
-        Creature(CreatureType),
-        #[allow(missing_docs)]
-        Planar(PlanarType)
-    }
+/// A subtype of any card type.
+#[derive(Debug, From, Clone, Copy, PartialEq, Eq, Hash)]
+#[allow(missing_docs)]
+pub enum Subtype {
+    Artifact(ArtifactType),
+    Enchantment(EnchantmentType),
+    Land(LandType),
+    Planeswalker(PlaneswalkerType),
+    Spell(SpellType),
+    Creature(CreatureType),
+    Planar(PlanarType)
 }
 
 impl FromStr for Subtype {
