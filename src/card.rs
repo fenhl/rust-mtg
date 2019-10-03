@@ -1502,8 +1502,8 @@ impl Card {
                     }
                     "meld" => Layout::Meld {
                         top: names[0].clone(),
-                        bottom: names[1].clone(),
-                        back: names[2].clone()
+                        back: names[1].clone(),
+                        bottom: names[2].clone()
                     },
                     "adventure" => Layout::Adventure {
                         creature: names[0].clone(),
