@@ -415,11 +415,8 @@ pub enum DfcSymbol {
     /// The chalice/flame symbols used in *Tesla*.
     Chalice,
     #[cfg(feature = "custom")]
-    /// The mortal/god symbols used in *Scriptures of Urshad*, with the exception of Shala Na.
-    MortalGod,
-    #[cfg(feature = "custom")]
-    /// The mortal/planeswalker symbols used on Shala Na in *Scriptures of Urshad*.
-    MortalPlaneswalker
+    /// The mortal/god symbols used in *Scriptures of Urshad*.
+    MortalGod
 }
 
 /// The layout of a card, including other parts if any.
@@ -1358,13 +1355,13 @@ impl Card {
             CardData::Parsed { ref printings, .. } => printings[0].set.clone()
         };
         match &set_code[..] {
-            "ISD" | "DKA" | "SOI" => DfcSymbol::Sun,
-            "ORI" | "M19" => DfcSymbol::Spark,
-            "EMN" => match &self.name[..] {
+            "ISD" | "PISD" | "DKA" | "PDKA" | "SOI" | "PSOI" => DfcSymbol::Sun,
+            "ORI" | "PORI" | "M19" | "PM19" => DfcSymbol::Spark,
+            "EMN" | "PEMN" => match &self.name[..] {
                 "Ulrich of the Krallenhorde" | "Ulrich, Uncontested Alpha" => DfcSymbol::Sun,
                 _ => DfcSymbol::Emrakul
             },
-            "XLN" | "RIX" => DfcSymbol::Compass,
+            "XLN" | "PXLN" | "RIX" | "PRIX" => DfcSymbol::Compass,
             "V17" => match &self.name[..] {
                 "Archangel Avacyn" |
                 "Arlinn Kord" |
@@ -1397,14 +1394,14 @@ impl Card {
                 "Temple of Aclazotz" => DfcSymbol::Compass,
                 name => { panic!("unexpected V17 DFC: {}", name); }
             },
-            "pLPA" => match &self.name[..] {
+            "PLPA" => match &self.name[..] {
                 "Ludevic's Abomination" |
                 "Ludevic's Test Subject" |
                 "Mondronen Shaman" |
                 "Tovolar's Magehunter" => DfcSymbol::Sun,
                 name => { panic!("unexpected pLPA DFC: {}", name); }
             },
-            "pPRE" => match &self.name[..] {
+            "PPRE" => match &self.name[..] {
                 "Archdemon of Greed" |
                 "Howlpack Alpha" |
                 "Mayor of Avabruck" |
@@ -1440,10 +1437,7 @@ impl Card {
             "TSL" => DfcSymbol::Chalice,
             "VLN" => DfcSymbol::Spark,
             "RAK" | "EAU" => DfcSymbol::Sun,
-            "SOU" => match &self.name[..] {
-                "Shala Na, Urshadi Apostate" | "Shala Na, God-Chosen" => DfcSymbol::MortalPlaneswalker,
-                _ => DfcSymbol::MortalGod
-            },
+            "SOU" => DfcSymbol::MortalGod,
             _ => self.dfc_symbol()
         }
     }
