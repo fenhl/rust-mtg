@@ -1355,13 +1355,13 @@ impl Card {
             CardData::Parsed { ref printings, .. } => printings[0].set.clone()
         };
         match &set_code[..] {
-            "ISD" | "PISD" | "DKA" | "PDKA" | "SOI" | "PSOI" => DfcSymbol::Sun,
-            "ORI" | "PORI" | "M19" | "PM19" => DfcSymbol::Spark,
+            "ISD" | "PISD" | "DKA" | "PDKA" | "SOI" | "PSOI" | "PRM" => DfcSymbol::Sun,
+            "ORI" | "PORI" | "PS15" | "M19" | "PM19" => DfcSymbol::Spark,
             "EMN" | "PEMN" => match &self.name[..] {
                 "Ulrich of the Krallenhorde" | "Ulrich, Uncontested Alpha" => DfcSymbol::Sun,
                 _ => DfcSymbol::Emrakul
             },
-            "XLN" | "PXLN" | "RIX" | "PRIX" => DfcSymbol::Compass,
+            "XLN" | "PXLN" | "RIX" | "PRIX" | "PXTC" => DfcSymbol::Compass,
             "V17" => match &self.name[..] {
                 "Archangel Avacyn" |
                 "Arlinn Kord" |
