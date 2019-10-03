@@ -187,7 +187,7 @@ impl Db {
         let set_release_date = if let Some(date) = set.get("releaseDate") { date } else { return Err(DbError::ParseSet { step: SetReleaseDate, set_code: set_code.into() }); };
         for mut card in set_cards.into_iter().cloned() {
             let card = if let Some(card) = card.as_object_mut() { card } else { return Err(DbError::ParseSet { step: CardObject, set_code: set_code.into() }); };
-            match card.get("border").map_or(Some(set_border), |border| border.as_str()) {
+            match card.get("borderColor").or_else(|| card.get("border")).map_or(Some(set_border), |border| border.as_str()) {
                 Some("silver") => { continue; } // silver-bordered card
                 Some(_) => {}
                 None => { return Err(DbError::ParseSet { step: CardBorder, set_code: set_code.into() }); }
