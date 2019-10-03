@@ -1637,6 +1637,7 @@ impl Card {
             CardData::RawJson { ref printings } => printings[0].get("stability").map(|sta| match *sta {
                 Json::Null => Number::X,
                 Json::Number(ref n) => Number::from(n.as_u64().expect(&format!("invalid starting stability: {}", n))),
+                Json::String(ref s) => if s == "X" { Number::X } else { s.parse().expect(&format!("invalid starting stability: {}", s)) },
                 ref v => { panic!("invalid starting stability: {}", v); }
             }),
             CardData::Parsed { ref stability, .. } => stability.clone()
