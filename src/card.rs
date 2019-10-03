@@ -1430,8 +1430,7 @@ impl Card {
             CardData::RawJson { ref printings } => {
                 let names = self.names(printings);
                 match printings[0]["layout"].as_str().expect("card layout is not a string") {
-                    "split" | "flip" | "double-faced" => self.name == names[1].name,
-                    "meld" => self.name == names[2].name,
+                    "split" | "flip" | "double-faced" | "transform" | "meld" | "adventure" => self.name == names[1].name,
                     _ => false
                 }
             }
