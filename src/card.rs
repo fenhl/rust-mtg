@@ -1493,7 +1493,7 @@ impl Card {
                 match printings[0]["layout"].as_str().expect("card layout is not a string") {
                     "split" | "aftermath" => Layout::Split { left: names[0].clone(), right: names[1].clone() },
                     "flip" => Layout::Flip { unflipped: names[0].clone(), flipped: names[1].clone() },
-                    "double-faced" => {
+                    "double-faced" | "transform" => {
                         Layout::DoubleFaced {
                             symbol: self.dfc_symbol_custom(),
                             front: names[0].clone(),
