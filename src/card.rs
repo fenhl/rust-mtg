@@ -179,7 +179,8 @@ impl Db {
         let set = if let Some(set) = set.as_object() { set } else { return Err(DbError::ParseSet { step: SetObject, set_code: set_code.into() }); };
         match set.get("type").and_then(|set_type| set_type.as_str()) {
             Some("errata") => { return Ok(()); } // ignore errata sets //TODO apply errata according to set priorities
-            Some("funny") => { return Ok(()); } // ignore funny sets even if the cards aren't silver-bordered (e.g. Heroes of the Realm)
+            Some("funny") => { return Ok(()); } // ignore funny sets even if the cards aren't silver-bordered (e.g. Heroes of the Realm) //TODO figure out a better way to do this to get black-bordered cards in unsets back (basics, Steamflogger Boss)
+            Some("memorabilia") => { return Ok(()); } // memorabilia sets either have oversized cards or nonstandard card backs, and include some non-silver-bordered uncards (e.g. Heroes of the Realm 2017)
             Some("token") => { return Ok(()); } // ignore token sets and Hero's Path
             _ => {}
         }
@@ -197,10 +198,6 @@ impl Db {
                 Some("token") => { continue; } // token card, don't include
                 Some(_) => {}
                 None => { return Err(DbError::ParseSet { step: CardLayout, set_code: set_code.into() }); }
-            }
-            match card.get("name").and_then(|name| name.as_str()) {
-                Some(name) => if ["1996 World Champion", "Fraternal Exaltation", "Proposal", "Robot Chicken", "Shichifukujin Dragon", "Splendid Genesis"].contains(&name) { continue; } // black-bordered, but not legal in any format
-                None => { return Err(DbError::ParseSet { step: CardName, set_code: set_code.into() }); }
             }
             card.entry("releaseDate".to_owned()).or_insert(set_release_date.clone());
             card.insert("setCode".into(), json!(set_code));
