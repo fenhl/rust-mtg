@@ -1561,6 +1561,25 @@ impl Card {
         Some(())
     }
 
+    /// Returns the following card, depending on layout:
+    ///
+    /// * Split: The left half
+    /// * Flip: The unflipped version
+    /// * Adventure: the creature
+    /// * Double-faced: the front face
+    /// * Meld: The card with the meld ability
+    /// * Other: The card itself
+    pub fn primary(&self) -> Card {
+        match self.layout() {
+            Layout::Normal => self.clone(),
+            Layout::Split { left, .. } => left,
+            Layout::Flip { unflipped, .. } => unflipped,
+            Layout::DoubleFaced { front, .. } => front,
+            Layout::Meld { top, .. } => top,
+            Layout::Adventure { creature, .. } => creature
+        }
+    }
+
     /// Returns all the different printings of the card, sorted chronologically if possible.
     ///
     /// Warning: this method may take a very long time to return for basic lands.
