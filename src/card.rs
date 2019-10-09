@@ -1486,6 +1486,13 @@ impl Card {
         }
     }
 
+    /// Returns `true` if the card has at least one level keyword ability.
+    pub fn is_leveler(&self) -> bool {
+        self.abilities()
+            .into_iter()
+            .any(|ability| match ability { Ability::Keyword { .. } => true, _ => false })
+    }
+
     /// Returns the layout of the card.
     pub fn layout(&self) -> Layout {
         match *self.data.read().unwrap() {
