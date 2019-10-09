@@ -32,6 +32,7 @@ use {
     },
     caseless::default_case_fold_str,
     derive_more::From,
+    itertools::Itertools as _,
     num::{
         BigInt,
         BigUint
@@ -1215,8 +1216,10 @@ impl Card {
     /// Reminder text is removed, and multiple keyword abilities on one line are split into separate abilities. However, ability words will be retained.
     pub fn abilities(&self) -> Vec<Ability> {
         let mut result = Vec::<Ability>::default();
-        for line in self.text().split('\n').filter(|line| !line.is_empty()) {
-            if line.chars().next().map_or(false, |c| c == '•') && !result.is_empty() {
+        let text = self.text();
+        let mut lines = text.split('\n').filter(|line| !line.is_empty());
+        while let Some(line) = lines.next() {
+            if line.starts_with('•') && !result.is_empty() {
                 match result[result.len() - 1] {
                     Ability::Modal { .. } => {
                         // mode, part of previous ability
@@ -1238,7 +1241,29 @@ impl Card {
                     _ => {}
                 }
             }
-            if line.chars().next().map_or(false, |c| c == '(') && line.chars().next_back().map_or(false, |c| c == ')') {
+            if line.starts_with("LEVEL ") {
+                let level_range = &line["LEVEL ".len()..];
+                let (min, max) = if level_range.ends_with('+') {
+                    (level_range[..level_range.len() - 1].parse().expect("failed to parse level range"), None)
+                } else {
+                    let (min, max) = level_range.split('-')
+                        .map(|n| n.parse().expect("failed to parse level range"))
+                        .collect_tuple()
+                        .expect("failed to parse level range");
+                    (min, Some(max))
+                };
+                let (power, toughness) = lines.next().expect("missing P/T for level keyword")
+                    .split('/')
+                    .map(|n| n.parse().expect("failed to parse level P/T"))
+                    .collect_tuple()
+                    .expect("failed to parse level P/T");
+                result.push(Ability::Level {
+                    max, min, power, toughness,
+                    abilities: Vec::default()
+                });
+                continue;
+            }
+            if line.starts_with('(') && line.ends_with(')') {
                 continue; // skip reminder text
             }
             let line = Regex::new(r" ?\(.*?\)").expect("failed to build parens regex").replace_all(line, "");
@@ -1253,10 +1278,18 @@ impl Card {
                 }
             }
             if is_keywords {
-                result.append(&mut keywords);
+                if let Some(Ability::Level { abilities, .. }) = result.last_mut() {
+                    abilities.append(&mut keywords);
+                } else {
+                    result.append(&mut keywords);
+                }
             } else {
                 // new ability
-                result.push(Ability::Other(line.into()));
+                if let Some(Ability::Level { abilities, .. }) = result.last_mut() {
+                    abilities.push(Ability::Other(line.into()));
+                } else {
+                    result.push(Ability::Other(line.into()));
+                }
             }
         }
         result
