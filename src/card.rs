@@ -179,6 +179,7 @@ impl Db {
         let set = if let Some(set) = set.as_object() { set } else { return Err(DbError::ParseSet { step: SetObject, set_code: set_code.into() }); };
         match set.get("type").and_then(|set_type| set_type.as_str()) {
             Some("errata") => { return Ok(()); } // ignore errata sets //TODO apply errata according to set priorities
+            Some("funny") => { return Ok(()); } // ignore funny sets even if the cards aren't silver-bordered (e.g. Heroes of the Realm)
             Some("token") => { return Ok(()); } // ignore token sets and Hero's Path
             _ => {}
         }
