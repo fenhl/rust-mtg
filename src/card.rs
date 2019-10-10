@@ -1490,7 +1490,7 @@ impl Card {
     pub fn is_leveler(&self) -> bool {
         self.abilities()
             .into_iter()
-            .any(|ability| match ability { Ability::Keyword { .. } => true, _ => false })
+            .any(|ability| match ability { Ability::Level { .. } => true, _ => false })
     }
 
     /// Returns the layout of the card.
