@@ -33,7 +33,7 @@ pub enum ParseError {
 }
 
 /// A cost that may include a mana cost and/or other costs.
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Cost {
     /// The mana part of the cost.
     pub mana: ManaCost,

@@ -448,7 +448,7 @@ impl Default for Layout {
 }
 
 /// A number used in an ability.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Number {
     /// A constant number.
     Const(BigUint),
@@ -493,7 +493,7 @@ impl fmt::Display for Number {
 
 /// A keyword ability, including parameters (e.g. `absorb 1`).
 #[allow(missing_docs)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeywordAbility {
     Deathtouch,
     Defender,
@@ -1121,8 +1121,28 @@ impl FromStr for KeywordAbility {
     }
 }
 
+impl PartialEq<Ability> for KeywordAbility {
+    fn eq(&self, other: &Ability) -> bool {
+        if let Ability::Keyword(keyword) = other {
+            self == keyword
+        } else {
+            false
+        }
+    }
+}
+
+impl PartialEq<KeywordAbility> for Ability {
+    fn eq(&self, other: &KeywordAbility) -> bool {
+        if let Ability::Keyword(keyword) = self {
+            keyword == other
+        } else {
+            false
+        }
+    }
+}
+
 /// An ability printed on a card.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Ability {
     /// A keyword ability, with optional additional text.
     Keyword(KeywordAbility),
