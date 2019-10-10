@@ -1604,7 +1604,7 @@ mod tests {
 
     #[test]
     fn test_type_lines() {
-        let db = Db::download().expect("failed to download test card db");
+        let db = Db::download(false).expect("failed to download test card db");
         test_type_line(&db, "Dark Depths", "Legendary Snow Land");
         test_type_line(&db, "Hammer of Purphoros", "Legendary Enchantment Artifact");
         test_type_line(&db, "My Laughter Echoes", "Ongoing Scheme");

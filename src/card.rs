@@ -70,10 +70,12 @@ use {
     }
 };
 
-macro_rules! eprint_flush {
-    ($($fmt:tt)+) => {
-        eprint!($($fmt)+);
-        stderr().flush()?;
+macro_rules! verbose_eprint {
+    ($verbose:expr, $($fmt:tt)+) => {
+        if $verbose {
+            eprint!($($fmt)+);
+            stderr().flush()?;
+        }
     };
 }
 
@@ -89,6 +91,7 @@ pub enum ParseStep {
     CardObject,
     OtherName,
     SetCards,
+    SetCode,
     SetObject,
     SetReleaseDate
 }
@@ -111,7 +114,7 @@ pub enum DbError {
         /// The parsing step during which the error occurred
         step: ParseStep,
         /// The set code of the set where the error occurred
-        set_code: String
+        set_code: Option<String>
     }
 }
 
@@ -134,85 +137,55 @@ impl Db {
     }
 
     /// Downloads the current version of MTG JSON from their website and converts it into a `Db`.
-    pub fn download() -> Result<Db, DbError> {
+    ///
+    /// If `verbose` is true, a progress bar is shown on stderr.
+    pub fn download(verbose: bool) -> Result<Db, DbError> {
+        verbose_eprint!(verbose, "\r[....] downloading card database");
         let response = ::reqwest::get("https://mtgjson.com/json/AllSets.json")?;
-        Db::from_mtg_json(::serde_json::from_reader(response)?)
-    }
-
-    /// Like `download` but shows a progress bar on stderr.
-    pub fn download_verbose() -> Result<Db, DbError> {
-        eprint_flush!("\r[....] downloading card database");
-        let response = ::reqwest::get("https://mtgjson.com/json/AllSets.json")?;
-        eprint_flush!("\r[=...] decoding card database   ");
+        verbose_eprint!(verbose, "\r[=...] decoding card database   ");
         let json = ::serde_json::from_reader(response)?;
-        Db::from_mtg_json_verbose_inner(2, json)
+        Db::from_mtg_json_inner(verbose, 2, json)
     }
 
     /// Parses a JSON object structured like AllSets.json into a card database.
-    pub fn from_mtg_json(json: Json) -> Result<Db, DbError> {
-        let mut db = Db::empty();
-        let sets = if let Some(sets) = json.as_object() { sets } else { return Err(DbError::NotAnObject); };
-        for (set_code, set) in sets {
-            db.register_set(set_code, set)?;
-        }
-        db.gen_uncased();
-        db.start_parser_thread();
-        Ok(db)
+    ///
+    /// If `verbose` is true, a progress bar is shown on stderr.
+    pub fn from_mtg_json(json: Json, verbose: bool) -> Result<Db, DbError> {
+        Db::from_mtg_json_inner(verbose, 0, json)
     }
 
-    /// Like `from_mtg_json` but shows a progress bar on stderr.
-    pub fn from_mtg_json_verbose(json: Json) -> Result<Db, DbError> {
-        Db::from_mtg_json_verbose_inner(0, json)
-    }
-
-    fn from_mtg_json_verbose_inner(starting_progress: usize, json: Json) -> Result<Db, DbError> {
+    fn from_mtg_json_inner(verbose: bool, starting_progress: usize, json: Json) -> Result<Db, DbError> {
         let mut db = Db::empty();
         let sets = if let Some(sets) = json.as_object() { sets } else { return Err(DbError::NotAnObject); };
-        for (i, (set_code, set)) in sets.iter().enumerate() {
+        for (i, set) in sets.values().enumerate() {
             let progress = starting_progress + (4 - starting_progress).min((5 - starting_progress) * i / sets.len());
-            eprint_flush!("\r[{}{}] adding sets to database: {} of {}", "=".repeat(progress), ".".repeat(4 - progress), i, sets.len());
-            db.register_set(set_code, set)?;
+            verbose_eprint!(verbose, "\r[{}{}] adding sets to database: {} of {}", "=".repeat(progress), ".".repeat(4 - progress), i, sets.len());
+            db.register_set(set)?;
         }
-        eprint_flush!("\r[====] generating case-insensitive card name index");
+        verbose_eprint!(verbose, "\r[====] generating case-insensitive card name index");
         db.gen_uncased();
         db.start_parser_thread();
-        eprintln!("\r[ ok ] cards loaded                               ");
+        verbose_eprint!(verbose, "\r[ ok ] cards loaded                               \n");
         Ok(db)
     }
 
     /// Creates a card database from a directory of MTG JSON set files.
-    pub fn from_sets_dir<P: AsRef<Path>>(path: P) -> Result<Db, DbError> {
-        let mut db = Db::empty();
-        for entry in fs::read_dir(path)? {
-            let entry = entry?;
-            let set_code = entry.file_name().into_string()?;
-            if !set_code.ends_with(".json") { continue; }
-            let mut set_file = File::open(entry.path())?;
-            let set = ::serde_json::from_reader(&mut set_file)?;
-            db.register_set(&set_code[..set_code.len() - 5], &set)?;
-        }
-        db.gen_uncased();
-        db.start_parser_thread();
-        Ok(db)
-    }
-
-    /// Like `from_sets_dir` but shows a progress bar on stderr.
-    pub fn from_sets_dir_verbose<P: AsRef<Path>>(path: P) -> Result<Db, DbError> {
+    ///
+    /// If `verbose` is true, a progress bar is shown on stderr.
+    pub fn from_sets_dir<P: AsRef<Path>>(path: P, verbose: bool) -> Result<Db, DbError> {
         let mut db = Db::empty();
         let sets = fs::read_dir(path)?.collect::<Result<Vec<_>, _>>()?;
         for (i, entry) in sets.iter().enumerate() {
             let progress = 4.min(5 * i / sets.len());
-            eprint_flush!("\r[{}{}] adding sets to database: {} of {}", "=".repeat(progress), ".".repeat(4 - progress), i, sets.len());
-            let set_code = entry.file_name().into_string()?;
-            if !set_code.ends_with(".json") { continue; }
+            verbose_eprint!(verbose, "\r[{}{}] adding sets to database: {} of {}", "=".repeat(progress), ".".repeat(4 - progress), i, sets.len());
             let mut set_file = File::open(entry.path())?;
             let set = ::serde_json::from_reader(&mut set_file)?;
-            db.register_set(&set_code[..set_code.len() - 5], &set)?;
+            db.register_set(&set)?;
         }
-        eprint_flush!("\r[====] generating case-insensitive card name index");
+        verbose_eprint!(verbose, "\r[====] generating case-insensitive card name index");
         db.gen_uncased();
         db.start_parser_thread();
-        eprintln!("\r[ ok ] cards loaded                               ");
+        verbose_eprint!(verbose, "\r[ ok ] cards loaded                               \n");
         Ok(db)
     }
 
@@ -234,10 +207,11 @@ impl Db {
         }
     }
 
-    fn register_set(&mut self, set_code: &str, set: &Json) -> Result<(), DbError> {
+    fn register_set(&mut self, set: &Json) -> Result<(), DbError> {
         use crate::card::ParseStep::*;
 
-        let set = if let Some(set) = set.as_object() { set } else { return Err(DbError::ParseSet { step: SetObject, set_code: set_code.into() }); };
+        let set = if let Some(set) = set.as_object() { set } else { return Err(DbError::ParseSet { step: SetObject, set_code: None }); };
+        let set_code = if let Some(code) = set.get("code").and_then(|code| code.as_str()) { code } else { return Err(DbError::ParseSet { step: SetCode, set_code: None }); };
         match set.get("type").and_then(|set_type| set_type.as_str()) {
             Some("errata") => { return Ok(()); } // ignore errata sets //TODO apply errata according to set priorities
             Some("funny") => { return Ok(()); } // ignore funny sets even if the cards aren't silver-bordered (e.g. Heroes of the Realm) //TODO figure out a better way to do this to get black-bordered cards in unsets back (basics, Steamflogger Boss)
@@ -246,30 +220,30 @@ impl Db {
             _ => {}
         }
         let set_border = set.get("border").and_then(|border| border.as_str()).unwrap_or("black");
-        let set_cards = if let Some(cards) = set.get("cards").and_then(|cards| cards.as_array()) { cards } else { return Err(DbError::ParseSet { step: SetCards, set_code: set_code.into() }); };
-        let set_release_date = if let Some(date) = set.get("releaseDate") { date } else { return Err(DbError::ParseSet { step: SetReleaseDate, set_code: set_code.into() }); };
+        let set_cards = if let Some(cards) = set.get("cards").and_then(|cards| cards.as_array()) { cards } else { return Err(DbError::ParseSet { step: SetCards, set_code: Some(set_code.into()) }); };
+        let set_release_date = if let Some(date) = set.get("releaseDate") { date } else { return Err(DbError::ParseSet { step: SetReleaseDate, set_code: Some(set_code.into()) }); };
         for mut card in set_cards.into_iter().cloned() {
-            let card = if let Some(card) = card.as_object_mut() { card } else { return Err(DbError::ParseSet { step: CardObject, set_code: set_code.into() }); };
+            let card = if let Some(card) = card.as_object_mut() { card } else { return Err(DbError::ParseSet { step: CardObject, set_code: Some(set_code.into()) }); };
             match card.get("borderColor").or_else(|| card.get("border")).map_or(Some(set_border), |border| border.as_str()) {
                 Some("silver") => { continue; } // silver-bordered card
                 Some(_) => {}
-                None => { return Err(DbError::ParseSet { step: CardBorder, set_code: set_code.into() }); }
+                None => { return Err(DbError::ParseSet { step: CardBorder, set_code: Some(set_code.into()) }); }
             }
             match card.get("layout").and_then(|layout| layout.as_str()) {
                 Some("token") => { continue; } // token card, don't include
                 Some(_) => {}
-                None => { return Err(DbError::ParseSet { step: CardLayout, set_code: set_code.into() }); }
+                None => { return Err(DbError::ParseSet { step: CardLayout, set_code: Some(set_code.into()) }); }
             }
             card.entry("releaseDate".to_owned()).or_insert(set_release_date.clone());
             card.insert("setCode".into(), json!(set_code));
-            let card_name = if let Some(name) = card.get("name").and_then(|name| name.as_str()) { name.to_owned() } else { return Err(DbError::ParseSet { step: CardName, set_code: set_code.into() }); };
+            let card_name = if let Some(name) = card.get("name").and_then(|name| name.as_str()) { name.to_owned() } else { return Err(DbError::ParseSet { step: CardName, set_code: Some(set_code.into()) }); };
             self.cards.entry(card_name.clone())
                 .or_insert_with(|| Card::new(&card_name))
                 .push_printing(card.to_owned());
             // add cross-references to other parts of the card
             if let Some(names) = card.get("names").and_then(|names| names.as_array()) {
                 for name_json in names {
-                    let other_name = name_json.as_str().ok_or(DbError::ParseSet { step: OtherName, set_code: set_code.into() })?;
+                    let other_name = name_json.as_str().ok_or(DbError::ParseSet { step: OtherName, set_code: Some(set_code.into()) })?;
                     if other_name != card_name {
                         let other_card = self.cards.entry(other_name.to_owned())
                             .or_insert_with(|| Card::new(other_name)).clone();
@@ -1860,7 +1834,7 @@ mod tests {
 
     #[test]
     fn test_indicators() -> Result<(), DbError> {
-        let db = Db::download()?;
+        let db = Db::download(false)?;
         test_indicator(&db, "Dryad Arbor", ColorSet::green());
         test_indicator(&db, "Nicol Bolas, the Arisen", ColorSet::grixis());
         test_indicator(&db, "Transguild Courier", ColorSet::rainbow());

@@ -378,7 +378,7 @@ mod tests {
 
     #[test]
     fn test_cmcs() {
-        let db = Db::download().expect("failed to download test card db");
+        let db = Db::download(false).expect("failed to download test card db");
         test_cmc(&db, "Beseech the Queen", 6);
         test_cmc(&db, "Emrakul, the Aeons Torn", 15);
         test_cmc(&db, "Evermind", 0);
@@ -392,7 +392,7 @@ mod tests {
 
     #[test]
     fn test_mana_costs() {
-        let db = Db::download().expect("failed to download test card db");
+        let db = Db::download(false).expect("failed to download test card db");
         test_mana_cost(&db, "Altered Ego", "{X}{2}{G}{U}");
         test_mana_cost(&db, "Angus Mackenzie", "{G}{W}{U}");
         test_mana_cost(&db, "Bone Saw", "{0}");
