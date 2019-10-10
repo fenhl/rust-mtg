@@ -21,7 +21,11 @@ use {
             Hash,
             Hasher
         },
-        io,
+        io::{
+            self,
+            prelude::*,
+            stderr
+        },
         path::Path,
         str::FromStr,
         sync::{
@@ -65,6 +69,13 @@ use {
         }
     }
 };
+
+macro_rules! eprint_flush {
+    ($($fmt:tt)+) => {
+        eprint!($($fmt)+);
+        stderr().flush()?;
+    };
+}
 
 type Obj = ::serde_json::Map<String, Json>;
 
@@ -113,12 +124,6 @@ pub struct Db {
 }
 
 impl Db {
-    /// Downloads the current version of MTG JSON from their website and converts it into a `Db`.
-    pub fn download() -> Result<Db, DbError> {
-        let response = ::reqwest::get("https://mtgjson.com/json/AllSets.json")?;
-        Db::from_mtg_json(::serde_json::from_reader(response)?)
-    }
-
     /// Returns a database without any cards in it.
     pub fn empty() -> Db {
         Db {
@@ -126,6 +131,21 @@ impl Db {
             cards_uncased: BTreeMap::default(),
             set_codes: HashSet::default()
         }
+    }
+
+    /// Downloads the current version of MTG JSON from their website and converts it into a `Db`.
+    pub fn download() -> Result<Db, DbError> {
+        let response = ::reqwest::get("https://mtgjson.com/json/AllSets.json")?;
+        Db::from_mtg_json(::serde_json::from_reader(response)?)
+    }
+
+    /// Like `download` but shows a progress bar on stderr.
+    pub fn download_verbose() -> Result<Db, DbError> {
+        eprint_flush!("\r[....] downloading card database");
+        let response = ::reqwest::get("https://mtgjson.com/json/AllSets.json")?;
+        eprint_flush!("\r[=...] decoding card database   ");
+        let json = ::serde_json::from_reader(response)?;
+        Db::from_mtg_json_verbose_inner(2, json)
     }
 
     /// Parses a JSON object structured like AllSets.json into a card database.
@@ -137,6 +157,26 @@ impl Db {
         }
         db.gen_uncased();
         db.start_parser_thread();
+        Ok(db)
+    }
+
+    /// Like `from_mtg_json` but shows a progress bar on stderr.
+    pub fn from_mtg_json_verbose(json: Json) -> Result<Db, DbError> {
+        Db::from_mtg_json_verbose_inner(0, json)
+    }
+
+    fn from_mtg_json_verbose_inner(starting_progress: usize, json: Json) -> Result<Db, DbError> {
+        let mut db = Db::empty();
+        let sets = if let Some(sets) = json.as_object() { sets } else { return Err(DbError::NotAnObject); };
+        for (i, (set_code, set)) in sets.iter().enumerate() {
+            let progress = starting_progress + (4 - starting_progress).min((5 - starting_progress) * i / sets.len());
+            eprint_flush!("\r[{}{}] adding sets to database: {} of {}", "=".repeat(progress), ".".repeat(4 - progress), i, sets.len());
+            db.register_set(set_code, set)?;
+        }
+        eprint_flush!("\r[====] generating case-insensitive card name index");
+        db.gen_uncased();
+        db.start_parser_thread();
+        eprintln!("\r[ ok ] cards loaded                               ");
         Ok(db)
     }
 
@@ -153,6 +193,26 @@ impl Db {
         }
         db.gen_uncased();
         db.start_parser_thread();
+        Ok(db)
+    }
+
+    /// Like `from_sets_dir` but shows a progress bar on stderr.
+    pub fn from_sets_dir_verbose<P: AsRef<Path>>(path: P) -> Result<Db, DbError> {
+        let mut db = Db::empty();
+        let sets = fs::read_dir(path)?.collect::<Result<Vec<_>, _>>()?;
+        for (i, entry) in sets.iter().enumerate() {
+            let progress = 4.min(5 * i / sets.len());
+            eprint_flush!("\r[{}{}] adding sets to database: {} of {}", "=".repeat(progress), ".".repeat(4 - progress), i, sets.len());
+            let set_code = entry.file_name().into_string()?;
+            if !set_code.ends_with(".json") { continue; }
+            let mut set_file = File::open(entry.path())?;
+            let set = ::serde_json::from_reader(&mut set_file)?;
+            db.register_set(&set_code[..set_code.len() - 5], &set)?;
+        }
+        eprint_flush!("\r[====] generating case-insensitive card name index");
+        db.gen_uncased();
+        db.start_parser_thread();
+        eprintln!("\r[ ok ] cards loaded                               ");
         Ok(db)
     }
 
