@@ -32,6 +32,76 @@ pub enum ParseError {
     UnknownComponent(String)
 }
 
+#[allow(missing_docs)] //TODO?
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ManaSymbol {
+    Variable,
+    Generic(BigUint),
+    Snow,
+    Colorless,
+    TwobridWhite,
+    TwobridBlue,
+    TwobridBlack,
+    TwobridRed,
+    TwobridGreen,
+    HybridWhiteBlue,
+    HybridBlueBlack,
+    HybridBlackRed,
+    HybridRedGreen,
+    HybridGreenWhite,
+    HybridWhiteBlack,
+    HybridBlueRed,
+    HybridBlackGreen,
+    HybridRedWhite,
+    HybridGreenBlue,
+    PhyrexianWhite,
+    PhyrexianBlue,
+    PhyrexianBlack,
+    PhyrexianRed,
+    PhyrexianGreen,
+    White,
+    Blue,
+    Black,
+    Red,
+    Green
+}
+
+impl fmt::Display for ManaSymbol {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ManaSymbol::Variable => write!(f, "{{X}}"),
+            ManaSymbol::Generic(n) => write!(f, "{{{}}}", n),
+            ManaSymbol::Snow => write!(f, "{{S}}"),
+            ManaSymbol::Colorless => write!(f, "{{C}}"),
+            ManaSymbol::TwobridWhite => write!(f, "{{2/W}}"),
+            ManaSymbol::TwobridBlue => write!(f, "{{2/U}}"),
+            ManaSymbol::TwobridBlack => write!(f, "{{2/B}}"),
+            ManaSymbol::TwobridRed => write!(f, "{{2/R}}"),
+            ManaSymbol::TwobridGreen => write!(f, "{{2/G}}"),
+            ManaSymbol::HybridWhiteBlue => write!(f, "{{W/U}}"),
+            ManaSymbol::HybridBlueBlack => write!(f, "{{U/B}}"),
+            ManaSymbol::HybridBlackRed => write!(f, "{{B/R}}"),
+            ManaSymbol::HybridRedGreen => write!(f, "{{R/G}}"),
+            ManaSymbol::HybridGreenWhite => write!(f, "{{G/W}}"),
+            ManaSymbol::HybridWhiteBlack => write!(f, "{{W/B}}"),
+            ManaSymbol::HybridBlueRed => write!(f, "{{U/R}}"),
+            ManaSymbol::HybridBlackGreen => write!(f, "{{B/G}}"),
+            ManaSymbol::HybridRedWhite => write!(f, "{{R/W}}"),
+            ManaSymbol::HybridGreenBlue => write!(f, "{{G/U}}"),
+            ManaSymbol::PhyrexianWhite => write!(f, "{{W/P}}"),
+            ManaSymbol::PhyrexianBlue => write!(f, "{{U/P}}"),
+            ManaSymbol::PhyrexianBlack => write!(f, "{{B/P}}"),
+            ManaSymbol::PhyrexianRed => write!(f, "{{R/P}}"),
+            ManaSymbol::PhyrexianGreen => write!(f, "{{G/P}}"),
+            ManaSymbol::White => write!(f, "{{W}}"),
+            ManaSymbol::Blue => write!(f, "{{U}}"),
+            ManaSymbol::Black => write!(f, "{{B}}"),
+            ManaSymbol::Red => write!(f, "{{R}}"),
+            ManaSymbol::Green => write!(f, "{{G}}")
+        }
+    }
+}
+
 /// A cost that may include a mana cost and/or other costs.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Cost {
@@ -173,6 +243,86 @@ impl ManaCost {
         if colors >= ColorSet::red() || colors >= ColorSet::white() { &self.hybrid_red_white } else { &zero } +
         if colors >= ColorSet::green() || colors >= ColorSet::blue() { &self.hybrid_green_blue } else { &zero }
     }
+
+    /// The symbols in this mana cost, in order from left to right.
+    ///
+    /// # Panics
+    ///
+    /// If the resulting vector would have more than `usize::MAX` elements.
+    pub fn symbols(&self) -> Vec<ManaSymbol> {
+        if *self == ManaCost::default() { return vec![ManaSymbol::Generic(BigUint::default())]; }
+        let mut result = Vec::default();
+        // generic and colorless costs
+        result.append(&mut vec![ManaSymbol::Variable; self.variable.to_usize().unwrap()]);
+        if self.generic > BigUint::default() {
+            result.push(ManaSymbol::Generic(self.generic.clone()));
+        }
+        result.append(&mut vec![ManaSymbol::Snow; self.snow.to_usize().unwrap()]);
+        result.append(&mut vec![ManaSymbol::Colorless; self.colorless.to_usize().unwrap()]);
+        // twobrid
+        let twobrids = ColorSet::from([
+            self.hybrid_2_white > BigUint::default(),
+            self.hybrid_2_blue > BigUint::default(),
+            self.hybrid_2_black > BigUint::default(),
+            self.hybrid_2_red > BigUint::default(),
+            self.hybrid_2_green > BigUint::default()
+        ]);
+        for color in twobrids.canonical_order() {
+            match color {
+                Color::White => { result.append(&mut vec![ManaSymbol::TwobridWhite; self.hybrid_2_white.to_usize().unwrap()]); }
+                Color::Blue => { result.append(&mut vec![ManaSymbol::TwobridBlue; self.hybrid_2_blue.to_usize().unwrap()]); }
+                Color::Black => { result.append(&mut vec![ManaSymbol::TwobridBlack; self.hybrid_2_black.to_usize().unwrap()]); }
+                Color::Red => { result.append(&mut vec![ManaSymbol::TwobridRed; self.hybrid_2_red.to_usize().unwrap()]); }
+                Color::Green => { result.append(&mut vec![ManaSymbol::TwobridGreen; self.hybrid_2_green.to_usize().unwrap()]); }
+            }
+        }
+        // hybrid
+        result.append(&mut vec![ManaSymbol::HybridWhiteBlue; self.hybrid_white_blue.to_usize().unwrap()]);
+        result.append(&mut vec![ManaSymbol::HybridBlueBlack; self.hybrid_blue_black.to_usize().unwrap()]);
+        result.append(&mut vec![ManaSymbol::HybridBlackRed; self.hybrid_black_red.to_usize().unwrap()]);
+        result.append(&mut vec![ManaSymbol::HybridRedGreen; self.hybrid_red_green.to_usize().unwrap()]);
+        result.append(&mut vec![ManaSymbol::HybridGreenWhite; self.hybrid_green_white.to_usize().unwrap()]);
+        result.append(&mut vec![ManaSymbol::HybridWhiteBlack; self.hybrid_white_black.to_usize().unwrap()]);
+        result.append(&mut vec![ManaSymbol::HybridBlueRed; self.hybrid_blue_red.to_usize().unwrap()]);
+        result.append(&mut vec![ManaSymbol::HybridBlackGreen; self.hybrid_black_green.to_usize().unwrap()]);
+        result.append(&mut vec![ManaSymbol::HybridRedWhite; self.hybrid_red_white.to_usize().unwrap()]);
+        result.append(&mut vec![ManaSymbol::HybridGreenBlue; self.hybrid_green_blue.to_usize().unwrap()]);
+        // Phyrexian
+        let phyrexian = ColorSet::from([
+            self.phyrexian_white > BigUint::default(),
+            self.phyrexian_blue > BigUint::default(),
+            self.phyrexian_black > BigUint::default(),
+            self.phyrexian_red > BigUint::default(),
+            self.phyrexian_green > BigUint::default()
+        ]);
+        for color in phyrexian.canonical_order() {
+            match color {
+                Color::White => { result.append(&mut vec![ManaSymbol::PhyrexianWhite; self.phyrexian_white.to_usize().unwrap()]); }
+                Color::Blue => { result.append(&mut vec![ManaSymbol::PhyrexianBlue; self.phyrexian_blue.to_usize().unwrap()]); }
+                Color::Black => { result.append(&mut vec![ManaSymbol::PhyrexianBlack; self.phyrexian_black.to_usize().unwrap()]); }
+                Color::Red => { result.append(&mut vec![ManaSymbol::PhyrexianRed; self.phyrexian_red.to_usize().unwrap()]); }
+                Color::Green => { result.append(&mut vec![ManaSymbol::PhyrexianGreen; self.phyrexian_green.to_usize().unwrap()]); }
+            }
+        }
+        // colored
+        let colored = ColorSet::from([
+            self.white > BigUint::default(),
+            self.blue > BigUint::default(),
+            self.black > BigUint::default(),
+            self.red > BigUint::default(),
+            self.green > BigUint::default()
+        ]);
+        for color in colored.canonical_order() {
+            match color {
+                Color::White => { result.append(&mut vec![ManaSymbol::White; self.white.to_usize().unwrap()]); }
+                Color::Blue => { result.append(&mut vec![ManaSymbol::Blue; self.blue.to_usize().unwrap()]); }
+                Color::Black => { result.append(&mut vec![ManaSymbol::Black; self.black.to_usize().unwrap()]); }
+                Color::Red => { result.append(&mut vec![ManaSymbol::Red; self.red.to_usize().unwrap()]); }
+                Color::Green => { result.append(&mut vec![ManaSymbol::Green; self.green.to_usize().unwrap()]); }
+            }
+        }
+        result
+    }
 }
 
 impl FromStr for ManaCost {
@@ -233,75 +383,8 @@ impl FromStr for ManaCost {
 
 impl fmt::Display for ManaCost {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if *self == ManaCost::default() { return "{0}".fmt(f); }
-        // generic and colorless costs
-        "{X}".repeat(self.variable.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        if self.generic > BigUint::default() {
-            write!(f, "{{{}}}", self.generic)?;
-        }
-        "{S}".repeat(self.snow.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        "{C}".repeat(self.colorless.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        // twobrid
-        let twobrids = ColorSet::from([
-            self.hybrid_2_white > BigUint::default(),
-            self.hybrid_2_blue > BigUint::default(),
-            self.hybrid_2_black > BigUint::default(),
-            self.hybrid_2_red > BigUint::default(),
-            self.hybrid_2_green > BigUint::default()
-        ]);
-        for color in twobrids.canonical_order() {
-            match color {
-                Color::White => { "{2/W}".repeat(self.hybrid_2_white.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Blue => { "{2/U}".repeat(self.hybrid_2_blue.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Black => { "{2/B}".repeat(self.hybrid_2_black.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Red => { "{2/R}".repeat(self.hybrid_2_red.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Green => { "{2/G}".repeat(self.hybrid_2_green.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-            }
-        }
-        // hybrid
-        "{W/U}".repeat(self.hybrid_white_blue.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        "{U/B}".repeat(self.hybrid_blue_black.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        "{B/R}".repeat(self.hybrid_black_red.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        "{R/G}".repeat(self.hybrid_red_green.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        "{G/W}".repeat(self.hybrid_green_white.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        "{W/B}".repeat(self.hybrid_white_black.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        "{U/R}".repeat(self.hybrid_blue_red.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        "{B/G}".repeat(self.hybrid_black_green.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        "{R/W}".repeat(self.hybrid_red_white.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        "{G/U}".repeat(self.hybrid_green_blue.to_usize().ok_or(fmt::Error)?).fmt(f)?;
-        // Phyrexian
-        let phyrexian = ColorSet::from([
-            self.phyrexian_white > BigUint::default(),
-            self.phyrexian_blue > BigUint::default(),
-            self.phyrexian_black > BigUint::default(),
-            self.phyrexian_red > BigUint::default(),
-            self.phyrexian_green > BigUint::default()
-        ]);
-        for color in phyrexian.canonical_order() {
-            match color {
-                Color::White => { "{W/P}".repeat(self.phyrexian_white.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Blue => { "{U/P}".repeat(self.phyrexian_blue.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Black => { "{B/P}".repeat(self.phyrexian_black.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Red => { "{R/P}".repeat(self.phyrexian_red.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Green => { "{G/P}".repeat(self.phyrexian_green.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-            }
-        }
-        // colored
-        let colored = ColorSet::from([
-            self.white > BigUint::default(),
-            self.blue > BigUint::default(),
-            self.black > BigUint::default(),
-            self.red > BigUint::default(),
-            self.green > BigUint::default()
-        ]);
-        for color in colored.canonical_order() {
-            match color {
-                Color::White => { "{W}".repeat(self.white.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Blue => { "{U}".repeat(self.blue.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Black => { "{B}".repeat(self.black.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Red => { "{R}".repeat(self.red.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-                Color::Green => { "{G}".repeat(self.green.to_usize().ok_or(fmt::Error)?).fmt(f)?; }
-            }
+        for symbol in self.symbols() {
+            symbol.fmt(f)?;
         }
         Ok(())
     }
