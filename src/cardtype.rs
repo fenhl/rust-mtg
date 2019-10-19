@@ -14,6 +14,7 @@ use {
         str::FromStr
     },
     derive_more::From,
+    itertools::Itertools as _,
     crate::color::{
         Color,
         ColorSet
@@ -149,6 +150,85 @@ impl TypeLine {
         && self.creature_types.is_empty()
         && self.planar_types.is_empty()
     }
+
+    /// Returns all the parts (supertypes, card types, and subtypes) of this type line, in the order they would be displayed on a card.
+    pub fn parts(&self) -> (Vec<Supertype>, Vec<CardType>, Vec<Subtype>) {
+        use self::CardType::*;
+        use self::LandType::*;
+
+        let supertypes = Supertype::iter_variants()
+            .filter(|supertype| self.supertypes.contains(&supertype))
+            .collect();
+        let card_types = [Tribal, Instant, Sorcery, Enchantment, Artifact, Land, Creature, Planeswalker, Conspiracy, Scheme, Vanguard, Phenomenon, Plane]
+            .iter()
+            .filter(|card_type| self.types.contains(card_type))
+            .copied()
+            .collect();
+        let mut subtypes = Vec::default();
+        // creature types (for unanimated tribals)
+        if !self.types.contains(&Creature) {
+            subtypes.extend(self.creature_types.iter().copied().map(Subtype::from));
+        }
+        // spell types
+        subtypes.extend(
+            SpellType::iter_variants()
+                .filter(|spell_type| self.spell_types.contains(spell_type))
+                .map(Subtype::from)
+        );
+        // enchantment types
+        subtypes.extend(
+            EnchantmentType::iter_variants()
+                .filter(|enchantment_type| self.enchantment_types.contains(enchantment_type))
+                .map(Subtype::from)
+        );
+        // artifact types
+        subtypes.extend(
+            ArtifactType::iter_variants()
+                .filter(|artifact_type| self.artifact_types.contains(artifact_type))
+                .map(Subtype::from)
+        );
+        // Urza's
+        if self.land_types.contains(&Urzas) {
+            subtypes.push(Subtype::from(Urzas));
+        }
+        // basic land types
+        let land_types = ColorSet::from([
+            self.land_types.contains(&Plains),
+            self.land_types.contains(&Island),
+            self.land_types.contains(&Swamp),
+            self.land_types.contains(&Mountain),
+            self.land_types.contains(&Forest)
+        ]);
+        subtypes.extend(
+            land_types.canonical_order()
+                .into_iter()
+                .map(|color| Subtype::from(LandType::from(color)))
+        );
+        // nonbasic land types (other than Urza's)
+        let nonbasic_land_types = LandType::iter_variants().filter(|land_type| ![Urzas, Plains, Island, Swamp, Mountain, Forest].contains(land_type));
+        subtypes.extend(
+            nonbasic_land_types
+                .filter(|land_type| self.land_types.contains(land_type))
+                .map(Subtype::from)
+        );
+        // creature types (for actual creatures)
+        if self.types.contains(&Creature) {
+            subtypes.extend(self.creature_types.iter().copied().map(Subtype::from));
+        }
+        // planeswalker types
+        subtypes.extend(
+            PlaneswalkerType::iter_variants()
+                .filter(|planeswalker_type| self.planeswalker_types.contains(planeswalker_type))
+                .map(Subtype::from)
+        );
+        // planar types
+        subtypes.extend(
+            PlanarType::iter_variants()
+                .filter(|planar_type| self.planar_types.contains(planar_type))
+                .map(Subtype::from)
+        );
+        (supertypes, card_types, subtypes)
+    }
 }
 
 /// Parses a type line printed on a card.
@@ -219,152 +299,12 @@ impl FromStr for TypeLine {
 
 impl fmt::Display for TypeLine {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::CardType::*;
-        use self::LandType::*;
-
-        // supertypes
-        for supertype in Supertype::iter_variants() {
-            if self.supertypes.contains(&supertype) {
-                write!(f, "{} ", supertype)?;
-            }
+        let (supertypes, card_types, subtypes) = self.parts();
+        write!(f, "{}", supertypes.into_iter().map(|supertype| supertype.to_string()).chain(card_types.into_iter().map(|card_type| card_type.to_string())).join(" "))?;
+        if !subtypes.is_empty() {
+            write!(f, " — {}", subtypes.into_iter().map(|subtype| subtype.to_string()).join(" "))?;
         }
-        // types
-        if self.types.is_empty() {
-            write!(f, "(no types)")
-        } else {
-            let mut first = true;
-            for card_type in &[Tribal, Instant, Sorcery, Enchantment, Artifact, Land, Creature, Planeswalker, Conspiracy, Scheme, Vanguard, Phenomenon, Plane] {
-                if self.types.contains(card_type) {
-                    if first {
-                        first = false;
-                    } else {
-                        write!(f, " ")?;
-                    }
-                    write!(f, "{}", card_type)?;
-                }
-            }
-            // dash
-            if !self.artifact_types.is_empty() || !self.enchantment_types.is_empty() || !self.land_types.is_empty() || !self.planeswalker_types.is_empty() || !self.spell_types.is_empty() || !self.creature_types.is_empty() || !self.planar_types.is_empty() {
-                write!(f, " \u{2014} ")?;
-                // subtypes
-                let mut first = true;
-                // creature types (for unanimated tribals)
-                if !self.types.contains(&Creature) {
-                    for creature_type in &self.creature_types {
-                        if first {
-                            first = false;
-                        } else {
-                            write!(f, " ")?;
-                        }
-                        write!(f, "{}", creature_type)?;
-                    }
-                }
-                // spell types
-                for spell_type in SpellType::iter_variants() {
-                    if self.spell_types.contains(&spell_type) {
-                        if first {
-                            first = false;
-                        } else {
-                            write!(f, " ")?;
-                        }
-                        write!(f, "{}", spell_type)?;
-                    }
-                }
-                // enchantment types
-                for ench_type in EnchantmentType::iter_variants() {
-                    if self.enchantment_types.contains(&ench_type) {
-                        if first {
-                            first = false;
-                        } else {
-                            write!(f, " ")?;
-                        }
-                        write!(f, "{}", ench_type)?;
-                    }
-                }
-                // artifact types
-                for artifact_type in ArtifactType::iter_variants() {
-                    if self.artifact_types.contains(&artifact_type) {
-                        if first {
-                            first = false;
-                        } else {
-                            write!(f, " ")?;
-                        }
-                        write!(f, "{}", artifact_type)?;
-                    }
-                }
-                // Urza's
-                if self.land_types.contains(&Urzas) {
-                    if first {
-                        first = false;
-                    } else {
-                        write!(f, " ")?;
-                    }
-                    write!(f, "{}", Urzas)?;
-                }
-                // basic land types
-                let land_types = ColorSet::from([
-                    self.land_types.contains(&Plains),
-                    self.land_types.contains(&Island),
-                    self.land_types.contains(&Swamp),
-                    self.land_types.contains(&Mountain),
-                    self.land_types.contains(&Forest)
-                ]);
-                for color in land_types.canonical_order() {
-                    if first {
-                        first = false;
-                    } else {
-                        write!(f, " ")?;
-                    }
-                    write!(f, "{}", LandType::from(color))?;
-                }
-                // nonbasic land types (other than Urza's)
-                let nonbasic_land_types = LandType::iter_variants().filter(|land_type| ![Urzas, Plains, Island, Swamp, Mountain, Forest].contains(land_type));
-                for land_type in nonbasic_land_types {
-                    if self.land_types.contains(&land_type) {
-                        if first {
-                            first = false;
-                        } else {
-                            write!(f, " ")?;
-                        }
-                        write!(f, "{}", land_type)?;
-                    }
-                }
-                // creature types (for actual creatures)
-                if self.types.contains(&Creature) {
-                    for creature_type in &self.creature_types {
-                        if first {
-                            first = false;
-                        } else {
-                            write!(f, " ")?;
-                        }
-                        write!(f, "{}", creature_type)?;
-                    }
-                }
-                // planeswalker types
-                for planeswalker_type in PlaneswalkerType::iter_variants() {
-                    if self.planeswalker_types.contains(&planeswalker_type) {
-                        if first {
-                            first = false;
-                        } else {
-                            write!(f, " ")?;
-                        }
-                        write!(f, "{}", planeswalker_type)?;
-                    }
-                }
-                // planar types
-                for planar_type in PlanarType::iter_variants() {
-                    if self.planar_types.contains(&planar_type) {
-                        if first {
-                            first = false;
-                        } else {
-                            write!(f, ", ")?;
-                        }
-                        write!(f, "{}", planar_type)?;
-                    }
-                }
-            }
-            Ok(())
-        }
+        Ok(())
     }
 }
 
