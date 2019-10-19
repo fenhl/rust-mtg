@@ -136,6 +136,19 @@ impl TypeLine {
             planar_types: planar_types
         })
     }
+
+    /// Returns true if the type line contains no supertypes, card types, or subtypes of any kind.
+    pub fn is_empty(&self) -> bool {
+        self.supertypes.is_empty()
+        && self.types.is_empty()
+        && self.artifact_types.is_empty()
+        && self.enchantment_types.is_empty()
+        && self.land_types.is_empty()
+        && self.planeswalker_types.is_empty()
+        && self.spell_types.is_empty()
+        && self.creature_types.is_empty()
+        && self.planar_types.is_empty()
+    }
 }
 
 /// Parses a type line printed on a card.
@@ -1589,6 +1602,20 @@ impl From<Subtype> for TypeLine {
             Subtype::Spell(spell_type) => spell_type.into(),
             Subtype::Creature(creature_type) => creature_type.into(),
             Subtype::Planar(planar_type) => planar_type.into()
+        }
+    }
+}
+
+impl fmt::Display for Subtype {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Subtype::Artifact(artifact_type) => artifact_type.fmt(f),
+            Subtype::Enchantment(enchantment_type) => enchantment_type.fmt(f),
+            Subtype::Land(land_type) => land_type.fmt(f),
+            Subtype::Planeswalker(planeswalker_type) => planeswalker_type.fmt(f),
+            Subtype::Spell(spell_type) => spell_type.fmt(f),
+            Subtype::Creature(creature_type) => creature_type.fmt(f),
+            Subtype::Planar(planar_type) => planar_type.fmt(f)
         }
     }
 }

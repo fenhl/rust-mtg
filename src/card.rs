@@ -66,7 +66,8 @@ use {
         cost::{
             Cost,
             ManaCost
-        }
+        },
+        util::StrExt as _
     }
 };
 
@@ -764,6 +765,11 @@ pub enum KeywordAbility {
     /// jump-start
     JumpStart,
     Mentor,
+    /// afterlife N
+    Afterlife(Number),
+    Riot,
+    /// spectacle [cost]
+    Spectacle(Cost),
     #[cfg(feature = "custom")]
     /// resonance [cost]
     Resonance(Cost),
@@ -815,7 +821,17 @@ pub enum KeywordAbility {
     /// prestige N
     Prestige(Number),
     #[cfg(feature = "custom")]
-    Voyage
+    Voyage,
+    #[cfg(feature = "custom")]
+    Enspirit,
+    #[cfg(feature = "custom")]
+    /// harmony — [Effect]
+    Harmony(String),
+    #[cfg(feature = "custom")]
+    Tithe,
+    #[cfg(feature = "custom")]
+    /// assault [cost]
+    Assault(Cost)
 }
 
 macro_rules! keyword_from_str {
@@ -834,6 +850,11 @@ macro_rules! keyword_from_str {
             if let Ok(cost) = Cost::from_str(&$s[$str.len() + "—".len()..]) {
                 return Some($variant(cost));
             }
+        }
+    };
+    (@$s:expr, (dash_text $str:expr => $variant:ident)) => {
+        if $s.to_lowercase().starts_with(concat!($str, " — ")) {
+            return Some($variant($s[$str.len() + " — ".len()..].to_owned()));
         }
     };
     (@$s:expr, (landwalk => $variant:ident)) => {
@@ -1105,7 +1126,10 @@ impl KeywordAbility {
             (number "afflict" => Afflict),
             (plain "assist" => Assist),
             (plain "jump-start" => JumpStart),
-            (plain "mentor" => Mentor)
+            (plain "mentor" => Mentor),
+            (number "afterlife" => Afterlife),
+            (plain "riot" => Riot),
+            (cost "spectacle" => Spectacle)
         });
         None
     }
@@ -1135,9 +1159,189 @@ impl KeywordAbility {
             (cost "seal" => Seal),
             (number_cost "secure" => Secure),
             (number "prestige" => Prestige),
-            (plain "voyage" => Voyage)
+            (plain "voyage" => Voyage),
+            (plain "enspirit" => Enspirit),
+            (dash_text "harmony" => Harmony),
+            (plain "tithe" => Tithe),
+            (cost "assault" => Assault)
         });
         KeywordAbility::from_str_base(s)
+    }
+
+    fn name(&self) -> &'static str {
+        use self::KeywordAbility::*;
+
+        match self {
+            Deathtouch => "deathtouch",
+            Defender => "defender",
+            DoubleStrike => "double strike",
+            Enchant(_) => "enchant",
+            EquipQuality(_, _) => "equip",
+            Equip(_) => "equip",
+            FirstStrike => "first strike",
+            Flash => "flash",
+            Flying => "flying",
+            Haste => "haste",
+            HexproofFrom(_) => "hexproof from",
+            Hexproof => "hexproof",
+            Indestructible => "indestructible",
+            Intimidate => "intimidate",
+            Landwalk { .. } => "landwalk",
+            Lifelink => "lifelink",
+            Protection(_) => "protection from",
+            Reach => "reach",
+            Shroud => "shroud",
+            Trample => "trample",
+            Vigilance => "vigilance",
+            Banding => "banding",
+            BandsWithOther(_) => "bands with other",
+            Rampage(_) => "rampage",
+            CumulativeUpkeep(_) => "cumulative upkeep",
+            Flanking => "flanking",
+            Phasing => "phasing",
+            Buyback(_) => "buyback",
+            Shadow => "shadow",
+            Cycling(_) => "cycling",
+            Typecycling(_, _) => "typecycling",
+            Echo(_) => "echo",
+            Horsemanship => "horsemanship",
+            Fading(_) => "fading",
+            Kicker(_) => "kicker",
+            Multikicker(_) => "multikicker",
+            Flashback(_) => "flashback",
+            Madness(_) => "madness",
+            Fear => "fear",
+            Morph(_) => "morph",
+            Megamorph(_) => "megamorph",
+            Amplify(_) => "amplify",
+            Provoke => "provoke",
+            Storm => "storm",
+            Affinity(_) => "affinity for",
+            Entwine(_) => "entwine",
+            Modular(_) => "modular",
+            Sunburst => "sunburst",
+            Bushido(_) => "bushido",
+            Soulshift(_) => "soulshift",
+            Splice(_, _) => "splice onto",
+            Offering(_) => " offering",
+            Ninjutsu(_) => "ninjutsu",
+            CommanderNinjutsu(_) => "commander ninjutsu",
+            Epic => "epic",
+            Convoke => "convoke",
+            Dredge(_) => "dredge",
+            Transmute(_) => "transmute",
+            Bloodthirst(_) => "bloodthirst",
+            Haunt => "haunt",
+            Replicate(_) => "replicate",
+            Forecast(_) => "forecast",
+            Graft(_) => "graft",
+            Recover(_) => "recover",
+            Ripple(_) => "ripple",
+            SplitSecond => "split second",
+            Suspend(_, _) => "suspend",
+            Vanishing(_) => "vanishing",
+            Absorb(_) => "absorb",
+            AuraSwap(_) => "aura swap",
+            Delve => "delve",
+            Fortify(_) => "fortify",
+            Frenzy(_) => "frenzy",
+            Gravestorm => "gravestorm",
+            Poisonous(_) => "poisonous",
+            Transfigure(_) => "transfigure",
+            Champion(_) => "champion a",
+            Changeling => "changeling",
+            Evoke(_) => "evoke",
+            Hideaway => "hideaway",
+            Prowl(_) => "prowl",
+            Reinforce(_, _) => "reinforce",
+            Conspire => "conspire",
+            Persist => "persist",
+            Wither => "wither",
+            Retrace => "retrace",
+            Devour(_) => "devour",
+            Exalted => "exalted",
+            Unearth(_) => "unearth",
+            Cascade => "cascade",
+            Annihilator(_) => "annihilator",
+            LevelUp(_) => "level up",
+            Rebound => "rebound",
+            TotemArmor => "totem armor",
+            Infect => "infect",
+            BattleCry => "battle cry",
+            LivingWeapon => "living weapon",
+            Undying => "undying",
+            Miracle(_) => "miracle",
+            Soulbond => "soulbond",
+            Overload(_) => "overload",
+            Scavenge(_) => "scavenge",
+            Unleash => "unleash",
+            Cipher => "cipher",
+            Evolve => "evolve",
+            Extort => "extort",
+            Fuse => "fuse",
+            Bestow(_) => "bestow",
+            Tribute(_) => "tribute",
+            Dethrone => "dethrone",
+            HiddenAgenda => "hidden agenda",
+            DoubleAgenda => "double agenda",
+            Outlast(_) => "outlast",
+            Prowess => "prowess",
+            Dash(_) => "dash",
+            Exploit => "exploit",
+            Menace => "menace",
+            Renown(_) => "renown",
+            Awaken(_, _) => "awaken",
+            Devoid => "devoid",
+            Ingest => "ingest",
+            Myriad => "myriad",
+            Surge(_) => "surge",
+            Skulk => "skulk",
+            Emerge(_) => "emerge",
+            Escalate(_) => "escalate",
+            Melee => "melee",
+            Crew(_) => "crew",
+            Fabricate(_) => "fabricate",
+            Partner => "partner",
+            PartnerWith(_) => "partner with",
+            Undaunted => "undaunted",
+            Improvise => "improvise",
+            Aftermath => "aftermath",
+            Embalm(_) => "embalm",
+            Eternalize(_) => "eternalize",
+            Afflict(_) => "afflict",
+            Ascend => "ascend",
+            Assist => "assist",
+            JumpStart => "jump-start",
+            Mentor => "mentor",
+            Afterlife(_) => "afterlife",
+            Riot => "riot",
+            Spectacle(_) => "spectacle",
+            #[cfg(feature = "custom")] Warband => "warband",
+            #[cfg(feature = "custom")] Resonance(_) => "resonance",
+            #[cfg(feature = "custom")] Dreamwalk => "dreamwalk",
+            #[cfg(feature = "custom")] Premonition(_, _) => "premonition",
+            #[cfg(feature = "custom")] Decipher(_) => "decipher",
+            #[cfg(feature = "custom")] Worship(_) => "worship",
+            #[cfg(feature = "custom")] Loaded(_) => "loaded",
+            #[cfg(feature = "custom")] Reflex(_) => "reflex",
+            #[cfg(feature = "custom")] Revolution => "revolution",
+            #[cfg(feature = "custom")] Possess => "possess",
+            #[cfg(feature = "custom")] Torture => "torture",
+            #[cfg(feature = "custom")] Focus(_) => "focus",
+            #[cfg(feature = "custom")] Invocation => "invocation",
+            #[cfg(feature = "custom")] Resurrect(_) => "resurrect",
+            #[cfg(feature = "custom")] Desperation => "desperation",
+            #[cfg(feature = "custom")] Hollow => "hollow",
+            #[cfg(feature = "custom")] Salvage(_) => "salvage",
+            #[cfg(feature = "custom")] Seal(_) => "seal",
+            #[cfg(feature = "custom")] Secure(_, _) => "secure",
+            #[cfg(feature = "custom")] Prestige(_) => "prestige",
+            #[cfg(feature = "custom")] Voyage => "voyage",
+            #[cfg(feature = "custom")] Enspirit => "enspirit",
+            #[cfg(feature = "custom")] Harmony(_) => "harmony",
+            #[cfg(feature = "custom")] Tithe => "tithe",
+            #[cfg(feature = "custom")] Assault(_) => "assault"
+        }
     }
 }
 
@@ -1152,6 +1356,221 @@ impl FromStr for KeywordAbility {
     #[cfg(feature = "custom")]
     fn from_str(s: &str) -> Result<KeywordAbility, ()> {
         KeywordAbility::from_str_custom(s).ok_or(())
+    }
+}
+
+impl fmt::Display for KeywordAbility {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::KeywordAbility::*;
+
+        match self {
+            AuraSwap(cost) |
+            Bestow(cost) |
+            Buyback(cost) |
+            CommanderNinjutsu(cost) |
+            CumulativeUpkeep(cost) |
+            Cycling(cost) |
+            Dash(cost) |
+            Echo(cost) |
+            Embalm(cost) |
+            Emerge(cost) |
+            Entwine(cost) |
+            Equip(cost) |
+            Escalate(cost) |
+            Eternalize(cost) |
+            Evoke(cost) |
+            Flashback(cost) |
+            Fortify(cost) |
+            Kicker(cost) |
+            LevelUp(cost) |
+            Madness(cost) |
+            Megamorph(cost) |
+            Miracle(cost) |
+            Morph(cost) |
+            Multikicker(cost) |
+            Ninjutsu(cost) |
+            Outlast(cost) |
+            Overload(cost) |
+            Prowl(cost) |
+            Recover(cost) |
+            Replicate(cost) |
+            Scavenge(cost) |
+            Spectacle(cost) |
+            Surge(cost) |
+            Transfigure(cost) |
+            Transmute(cost) |
+            Unearth(cost) => if cost.other.is_some() {
+                write!(f, "{}—{}", self.name(), cost)
+            } else {
+                write!(f, "{} {}", self.name(), cost)
+            },
+            #[cfg(feature = "custom")]
+            Assault(cost) |
+            Decipher(cost) |
+            Focus(cost) |
+            Reflex(cost) |
+            Resonance(cost) |
+            Resurrect(cost) |
+            Salvage(cost) |
+            Seal(cost) |
+            Worship(cost) => if cost.other.is_some() {
+                write!(f, "{}—{}", self.name(), cost)
+            } else {
+                write!(f, "{} {}", self.name(), cost)
+            },
+            #[cfg(feature = "custom")]
+            Harmony(text) => write!(f, "harmony — {}", text),
+            Landwalk { pos, neg } => if neg.is_empty() {
+                write!(f, "{}walk", pos.to_string().to_lowercase())
+            } else {
+                unimplemented!(); //TODO
+            },
+            Absorb(n) |
+            Afflict(n) |
+            Afterlife(n) |
+            Amplify(n) |
+            Annihilator(n) |
+            Bloodthirst(n) |
+            Bushido(n) |
+            Crew(n) |
+            Devour(n) |
+            Dredge(n) |
+            Fabricate(n) |
+            Fading(n) |
+            Frenzy(n) |
+            Graft(n) |
+            Modular(n) |
+            Poisonous(n) |
+            Rampage(n) |
+            Renown(n) |
+            Ripple(n) |
+            Soulshift(n) |
+            Tribute(n) |
+            Vanishing(n) => write!(f, "{} {}", self.name(), n),
+            #[cfg(feature = "custom")]
+            Loaded(n) |
+            Prestige(n) => write!(f, "{} {}", self.name(), n),
+            Awaken(n, cost) |
+            Reinforce(n, cost) |
+            Suspend(n, cost) => if cost.other.is_some() {
+                write!(f, "{} {}—{}", self.name(), n, cost)
+            } else {
+                write!(f, "{} {} {}", self.name(), n, cost)
+            },
+            #[cfg(feature = "custom")]
+            Premonition(n, cost) |
+            Secure(n, cost) => if cost.other.is_some() {
+                write!(f, "{} {}—{}", self.name(), n, cost)
+            } else {
+                write!(f, "{} {} {}", self.name(), n, cost)
+            },
+            Aftermath |
+            Ascend |
+            Assist |
+            Banding |
+            BattleCry |
+            Cascade |
+            Changeling |
+            Cipher |
+            Conspire |
+            Convoke |
+            Deathtouch |
+            Defender |
+            Delve |
+            Dethrone |
+            Devoid |
+            DoubleAgenda |
+            DoubleStrike |
+            Epic |
+            Evolve |
+            Exalted |
+            Exploit |
+            Extort |
+            Fear |
+            FirstStrike |
+            Flanking |
+            Flash |
+            Flying |
+            Fuse |
+            Gravestorm |
+            Haste |
+            Haunt |
+            Hexproof |
+            HiddenAgenda |
+            Hideaway |
+            Horsemanship |
+            Improvise |
+            Indestructible |
+            Infect |
+            Ingest |
+            Intimidate |
+            JumpStart |
+            Lifelink |
+            LivingWeapon |
+            Melee |
+            Menace |
+            Mentor |
+            Myriad |
+            Partner |
+            Persist |
+            Phasing |
+            Provoke |
+            Prowess |
+            Reach |
+            Rebound |
+            Retrace |
+            Riot |
+            Shadow |
+            Shroud |
+            Skulk |
+            Soulbond |
+            SplitSecond |
+            Storm |
+            Sunburst |
+            TotemArmor |
+            Trample |
+            Undaunted |
+            Undying |
+            Unleash |
+            Vigilance |
+            Wither => write!(f, "{}", self.name()),
+            #[cfg(feature = "custom")]
+            Desperation |
+            Dreamwalk |
+            Enspirit |
+            Hollow |
+            Invocation |
+            Possess |
+            Revolution |
+            Tithe |
+            Torture |
+            Voyage |
+            Warband => write!(f, "{}", self.name()),
+            Offering(subtype) => write!(f, "{} offering", subtype),
+            Splice(subtype, cost) => if cost.other.is_some() {
+                write!(f, "splice onto {}—{}", subtype, cost)
+            } else {
+                write!(f, "splice onto {} {}", subtype, cost)
+            },
+            Affinity(text) |
+            BandsWithOther(text) |
+            Champion(text) |
+            Enchant(text) |
+            HexproofFrom(text) |
+            PartnerWith(text) |
+            Protection(text) => write!(f, "{} {}", self.name(), text),
+            EquipQuality(text, cost) => if cost.other.is_some() {
+                write!(f, "equip {}—{}", text, cost)
+            } else {
+                write!(f, "equip {} {}", text, cost)
+            },
+            Typecycling(type_line, cost) => if cost.other.is_some() {
+                write!(f, "{}cycling—{}", type_line.to_string().to_lowercase(), cost)
+            } else {
+                write!(f, "{}cycling {}", type_line.to_string().to_lowercase(), cost)
+            },
+            Forecast(ability) => write!(f, "forecast — {}", ability)
+        }
     }
 }
 
@@ -1218,6 +1637,23 @@ impl FromStr for Ability {
         if let Ok(keyword) = KeywordAbility::from_str(s) { return Ok(Ability::Keyword(keyword)); }
         //TODO chapter keyword, level keyword, modal ability
         Ok(Ability::Other(s.into()))
+    }
+}
+
+impl fmt::Display for Ability {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Ability::Keyword(keyword) => write!(f, "{}", keyword.to_string().to_uppercase_first()),
+            Ability::Chapter { chapters, text } => write!(f, "{}—{}", chapters.iter().sorted().map(|chapter| format!("{{r{}}}", chapter)).join(", "), text),
+            Ability::Level { min, max, power, toughness, abilities } => write!(f, "{{LEVEL {}}}{}{}/{}",
+                if let Some(max) = max { format!("{}-{}", min, max) } else { format!("{}+", min) },
+                if abilities.is_empty() { format!(" ") } else { format!("\n{}\n", abilities.iter().map(ToString::to_string).join("\n")) },
+                power,
+                toughness
+            ),
+            Ability::Modal { choose, modes } => write!(f, "{}\n{}", choose, modes.join("\n• ")),
+            Ability::Other(text) => write!(f, "{}", text)
+        }
     }
 }
 

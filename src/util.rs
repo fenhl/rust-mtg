@@ -1,3 +1,18 @@
+pub(crate) trait StrExt {
+    fn to_uppercase_first(&self) -> String;
+}
+
+impl StrExt for str {
+    fn to_uppercase_first(&self) -> String {
+        let mut chars = self.chars();
+        if let Some(first) = chars.next() {
+            format!("{}{}", first.to_uppercase(), chars.collect::<String>())
+        } else {
+            String::default()
+        }
+    }
+}
+
 /// Fully deduplicates a vector, without `dedup`'s limit of adjacent entries.
 ///
 /// For each set of equal values in the array, this function removes all but the leftmost.

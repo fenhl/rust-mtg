@@ -147,6 +147,16 @@ impl FromStr for Cost {
     }
 }
 
+impl fmt::Display for Cost {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(ref other) = self.other {
+            write!(f, "{}, {}", other, self.mana)
+        } else {
+            self.mana.fmt(f)
+        }
+    }
+}
+
 /// A mana cost like `{1}{G}`.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct ManaCost {
