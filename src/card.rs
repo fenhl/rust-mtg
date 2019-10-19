@@ -1716,7 +1716,7 @@ impl Card {
                         let re = Regex::new(r" ?\(.*?\)").expect("failed to build parens regex");
                         let idx = result.len() - 1;
                         let modes = if let Ability::Modal { ref mut modes, .. } = result[idx] { modes } else { panic!("failed to convert ability to modal"); };
-                        modes.push(re.replace_all(line, "").into());
+                        modes.push(re.replace_all(&line["• ".len()..], "").into());
                         continue;
                     }
                     Ability::Other(_) => {
@@ -1724,7 +1724,7 @@ impl Card {
                         let re = Regex::new(r" ?\(.*?\)").expect("failed to build parens regex");
                         result.push(Ability::Modal {
                             choose,
-                            modes: vec![re.replace_all(line, "").into()]
+                            modes: vec![re.replace_all(&line["• ".len()..], "").into()]
                         });
                         continue;
                     }
