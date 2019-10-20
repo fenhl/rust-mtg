@@ -1598,7 +1598,7 @@ impl PartialEq<KeywordAbility> for Ability {
 /// A chapter symbol, as seen on Sagas and Discoveries.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Chapter {
-    /// A regular chapter number symbol.
+    /// A regular chapter number symbol `{rN}`.
     Number(u16),
     /// The `{DISCOVER}` symbol.
     Discover

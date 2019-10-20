@@ -138,6 +138,51 @@ impl TypeLine {
         })
     }
 
+    /// Returns all supertypes in this type line.
+    pub fn supertypes(&self) -> &HashSet<Supertype> {
+        &self.supertypes
+    }
+
+    /// Returns all card types in this type line.
+    pub fn types(&self) -> &HashSet<CardType> {
+        &self.types
+    }
+
+    /// Returns all artifact types in this type line.
+    pub fn artifact_types(&self) -> &HashSet<ArtifactType> {
+        &self.artifact_types
+    }
+
+    /// Returns all enchantment types in this type line.
+    pub fn enchantment_types(&self) -> &HashSet<EnchantmentType> {
+        &self.enchantment_types
+    }
+
+    /// Returns all land types in this type line.
+    pub fn land_types(&self) -> &HashSet<LandType> {
+        &self.land_types
+    }
+
+    /// Returns all planeswalker types in this type line.
+    pub fn planeswalker_types(&self) -> &HashSet<PlaneswalkerType> {
+        &self.planeswalker_types
+    }
+
+    /// Returns all spell types in this type line.
+    pub fn spell_types(&self) -> &HashSet<SpellType> {
+        &self.spell_types
+    }
+
+    /// Returns all creature types in this type line.
+    pub fn creature_types(&self) -> &Vec<CreatureType> {
+        &self.creature_types
+    }
+
+    /// Returns all planar types in this type line.
+    pub fn planar_types(&self) -> &HashSet<PlanarType> {
+        &self.planar_types
+    }
+
     /// Returns true if the type line contains no supertypes, card types, or subtypes of any kind.
     pub fn is_empty(&self) -> bool {
         self.supertypes.is_empty()
