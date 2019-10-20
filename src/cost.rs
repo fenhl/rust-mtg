@@ -69,7 +69,7 @@ pub enum ManaSymbol {
 }
 
 impl fmt::Display for ManaSymbol {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ManaSymbol::Variable => write!(f, "{{X}}"),
             ManaSymbol::Generic(n) => write!(f, "{{{}}}", n),
@@ -151,7 +151,7 @@ impl FromStr for Cost {
 }
 
 impl fmt::Display for Cost {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(ref other) = self.other {
             write!(f, "{}, {}", other, self.mana)
         } else {
@@ -402,7 +402,7 @@ impl FromStr for ManaCost {
 }
 
 impl fmt::Display for ManaCost {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for symbol in self.symbols() {
             symbol.fmt(f)?;
         }

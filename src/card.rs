@@ -517,7 +517,7 @@ impl FromStr for Number {
 }
 
 impl fmt::Display for Number {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Number::Const(ref n) => n.fmt(f),
             Number::X => write!(f, "X"),
@@ -1360,7 +1360,7 @@ impl FromStr for KeywordAbility {
 }
 
 impl fmt::Display for KeywordAbility {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::KeywordAbility::*;
 
         match self {
@@ -1594,6 +1594,26 @@ impl PartialEq<KeywordAbility> for Ability {
     }
 }
 
+#[cfg(feature = "custom")]
+/// A chapter symbol, as seen on Sagas and Discoveries.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum Chapter {
+    /// A regular chapter number symbol.
+    Number(u16),
+    /// The `{DISCOVER}` symbol.
+    Discover
+}
+
+#[cfg(feature = "custom")]
+impl fmt::Display for Chapter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Chapter::Number(n) => write!(f, "{{r{}}}", n),
+            Chapter::Discover => write!(f, "{{DISCOVER}}")
+        }
+    }
+}
+
 /// An ability printed on a card.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Ability {
@@ -1601,8 +1621,12 @@ pub enum Ability {
     Keyword(KeywordAbility),
     /// A chapter ability, typically found on a Saga card.
     Chapter {
+        #[cfg(not(feature = "custom"))]
         /// The chapter numbers that trigger this ability.
         chapters: HashSet<u16>,
+        #[cfg(feature = "custom")]
+        /// The chapter numbers that trigger this ability.
+        chapters: HashSet<Chapter>,
         /// The trigger effect.
         text: String
     },
@@ -1641,10 +1665,13 @@ impl FromStr for Ability {
 }
 
 impl fmt::Display for Ability {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Ability::Keyword(keyword) => write!(f, "{}", keyword.to_string().to_uppercase_first()),
-            Ability::Chapter { chapters, text } => write!(f, "{}—{}", chapters.iter().sorted().map(|chapter| format!("{{r{}}}", chapter)).join(", "), text),
+            Ability::Chapter { chapters, text } => write!(f, "{}—{}", chapters.iter().sorted().map(|chapter| {
+                #[cfg(not(feature = "custom"))] { format!("{{r{}}}", chapter) }
+                #[cfg(feature = "custom")] { format!("{}", chapter) }
+            }).join(", "), text),
             Ability::Level { min, max, power, toughness, abilities } => write!(f, "{{LEVEL {}}}{}{}/{}",
                 if let Some(max) = max { format!("{}-{}", min, max) } else { format!("{}+", min) },
                 if abilities.is_empty() { format!(" ") } else { format!("\n{}\n", abilities.iter().map(ToString::to_string).join("\n")) },
@@ -2247,7 +2274,7 @@ impl Ord for Card {
 
 /// Displays the card name.
 impl fmt::Display for Card {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
     }
 }

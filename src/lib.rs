@@ -1,9 +1,6 @@
 //! A library for writing *Magic: The Gathering*-related code in Rust.
 
-#![cfg_attr(test, deny(warnings))]
-#![warn(trivial_casts)]
-#![deny(unused, missing_docs, unused_qualifications)]
-#![forbid(unused_import_braces)]
+#![deny(missing_docs, rust_2018_idioms, unused, unused_import_braces, unused_qualifications, warnings)]
 
 pub mod card;
 pub mod cardtype;

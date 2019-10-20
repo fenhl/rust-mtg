@@ -298,7 +298,7 @@ impl FromStr for TypeLine {
 }
 
 impl fmt::Display for TypeLine {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (supertypes, card_types, subtypes) = self.parts();
         write!(f, "{}", supertypes.into_iter().map(|supertype| supertype.to_string()).chain(card_types.into_iter().map(|card_type| card_type.to_string())).join(" "))?;
         if !subtypes.is_empty() {
@@ -416,7 +416,7 @@ macro_rules! type_enum {
             }
         }
         impl fmt::Display for $ty {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 write!(f, "{}", match *self { $($ty::$variant => $name),* })
             }
         }
@@ -461,11 +461,11 @@ macro_rules! type_enum {
         }
         impl fmt::Display for $ty {
             #[cfg(not(feature = "custom"))]
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 write!(f, "{}", match *self { $($ty::$variant => $name),* })
             }
             #[cfg(feature = "custom")]
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 write!(f, "{}", match *self { $($ty::$variant => $name,)* $($ty::$custom_variant => $custom_name),* })
             }
         }
@@ -1547,7 +1547,7 @@ impl From<Subtype> for TypeLine {
 }
 
 impl fmt::Display for Subtype {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Subtype::Artifact(artifact_type) => artifact_type.fmt(f),
             Subtype::Enchantment(enchantment_type) => enchantment_type.fmt(f),
