@@ -38,6 +38,8 @@ pub enum ManaSymbol {
     Variable,
     Generic(BigUint),
     Snow,
+    #[cfg(feature = "custom")]
+    Runic,
     Colorless,
     TwobridWhite,
     TwobridBlue,
@@ -72,6 +74,7 @@ impl fmt::Display for ManaSymbol {
             ManaSymbol::Variable => write!(f, "{{X}}"),
             ManaSymbol::Generic(n) => write!(f, "{{{}}}", n),
             ManaSymbol::Snow => write!(f, "{{S}}"),
+            #[cfg(feature = "custom")] ManaSymbol::Runic => write!(f, "{{V}}"),
             ManaSymbol::Colorless => write!(f, "{{C}}"),
             ManaSymbol::TwobridWhite => write!(f, "{{2/W}}"),
             ManaSymbol::TwobridBlue => write!(f, "{{2/U}}"),
@@ -168,6 +171,7 @@ pub struct ManaCost {
     red: BigUint,
     green: BigUint,
     snow: BigUint,
+    #[cfg(feature = "custom")] runic: BigUint,
     phyrexian_white: BigUint,
     phyrexian_blue: BigUint,
     phyrexian_black: BigUint,
@@ -194,7 +198,7 @@ pub struct ManaCost {
 impl ManaCost {
     /// Returns the converted mana cost of an object with this mana cost.
     pub fn converted<N: Into<BigUint>>(&self, x: N) -> BigUint {
-        &self.generic +
+        let result = &self.generic +
         &self.colorless +
         &self.white +
         &self.blue +
@@ -224,7 +228,9 @@ impl ManaCost {
         &self.hybrid_black_green +
         &self.hybrid_red_white +
         &self.hybrid_green_blue +
-        x.into() * &self.variable
+        x.into() * &self.variable;
+        #[cfg(feature = "custom")] { result + &self.runic }
+        #[cfg(not(feature = "custom"))] { result }
     }
 
     /// Returns the amount a permanent with this mana cost contributes to its controller's devotion to the given colors.
@@ -268,6 +274,9 @@ impl ManaCost {
             result.push(ManaSymbol::Generic(self.generic.clone()));
         }
         result.append(&mut vec![ManaSymbol::Snow; self.snow.to_usize().unwrap()]);
+        #[cfg(feature = "custom")] {
+            result.append(&mut vec![ManaSymbol::Runic; self.runic.to_usize().unwrap()]);
+        }
         result.append(&mut vec![ManaSymbol::Colorless; self.colorless.to_usize().unwrap()]);
         // twobrid
         let twobrids = ColorSet::from([
@@ -359,6 +368,7 @@ impl FromStr for ManaCost {
                 "R" => ManaCost { red: BigUint::one(), ..ManaCost::default() },
                 "G" => ManaCost { green: BigUint::one(), ..ManaCost::default() },
                 "S" => ManaCost { snow: BigUint::one(), ..ManaCost::default() },
+                #[cfg(feature = "custom")] "V" => ManaCost { runic: BigUint::one(), ..ManaCost::default() },
                 "W/P" => ManaCost { phyrexian_white: BigUint::one(), ..ManaCost::default() },
                 "U/P" => ManaCost { phyrexian_blue: BigUint::one(), ..ManaCost::default() },
                 "B/P" => ManaCost { phyrexian_black: BigUint::one(), ..ManaCost::default() },
@@ -416,6 +426,7 @@ impl<'a> Add<ManaCost> for &'a ManaCost {
             red: &self.red + rhs.red,
             green: &self.green + rhs.green,
             snow: &self.snow + rhs.snow,
+            #[cfg(feature = "custom")] runic: &self.runic + rhs.runic,
             phyrexian_white: &self.phyrexian_white + rhs.phyrexian_white,
             phyrexian_blue: &self.phyrexian_blue + rhs.phyrexian_blue,
             phyrexian_black: &self.phyrexian_black + rhs.phyrexian_black,
