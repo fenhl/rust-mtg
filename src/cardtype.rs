@@ -25,12 +25,15 @@ use {
 #[derive(Debug, From)]
 pub enum ParseError {
     /// A word to the left of the dash was not recognized as a supertype or card type.
+    #[from(ignore)]
     UnknownSupertypeOrCardType(String),
     /// The type line contained both Plane and another card type. Subtypes for this combination cannot be parsed.
     MultitypePlane,
     /// The right side of the type line was not recognized as a planar type.
+    #[from(ignore)]
     UnknownPlanarType(String),
     /// A word to the right of the dash was not recognized as a subtype.
+    #[from(ignore)]
     UnknownSubtype(String),
     /// See `InvalidTypeLineError`
     InvalidComponents(InvalidTypeLineError)
