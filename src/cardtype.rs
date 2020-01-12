@@ -876,6 +876,8 @@ type_enum! {
 
         custom
 
+        /// Ameret
+        Ameret("Ameret"),
         /// Cypress
         Cypress("Cypress"),
         /// Eli
@@ -896,6 +898,8 @@ type_enum! {
         Helena("Helena"),
         /// Hohoja
         Hohoja("Hohoja"),
+        /// Jericho
+        Jericho("Jericho"),
         /// L3-T
         L3T("L3-T"),
         /// Lazaire
