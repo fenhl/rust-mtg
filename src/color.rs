@@ -15,7 +15,7 @@ use {
         },
         str::FromStr
     },
-    serde_derive::{
+    serde::{
         Deserialize,
         Serialize
     }

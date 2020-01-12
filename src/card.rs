@@ -37,12 +37,13 @@ use {
     caseless::default_case_fold_str,
     derive_more::From,
     itertools::Itertools as _,
+    lazy_static::lazy_static,
     num::{
         BigInt,
         BigUint
     },
     regex::Regex,
-    serde_derive::{
+    serde::{
         Deserialize,
         Serialize
     },
@@ -78,6 +79,10 @@ macro_rules! verbose_eprint {
             stderr().flush()?;
         }
     };
+}
+
+lazy_static! {
+    static ref PARENS_REGEX: Regex = Regex::new(r" ?\(.*?\)").expect("failed to build parens regex");
 }
 
 type Obj = ::serde_json::Map<String, Json>;
@@ -1740,18 +1745,16 @@ impl Card {
                 match result[result.len() - 1] {
                     Ability::Modal { .. } => {
                         // mode, part of previous ability
-                        let re = Regex::new(r" ?\(.*?\)").expect("failed to build parens regex");
                         let idx = result.len() - 1;
                         let modes = if let Ability::Modal { ref mut modes, .. } = result[idx] { modes } else { panic!("failed to convert ability to modal"); };
-                        modes.push(re.replace_all(&line["• ".len()..], "").into());
+                        modes.push(PARENS_REGEX.replace_all(&line["• ".len()..], "").into());
                         continue;
                     }
                     Ability::Other(_) => {
                         let choose = if let Some(Ability::Other(text)) = result.pop() { text } else { panic!("failed to convert ability to modal"); };
-                        let re = Regex::new(r" ?\(.*?\)").expect("failed to build parens regex");
                         result.push(Ability::Modal {
                             choose,
-                            modes: vec![re.replace_all(&line["• ".len()..], "").into()]
+                            modes: vec![PARENS_REGEX.replace_all(&line["• ".len()..], "").into()]
                         });
                         continue;
                     }
@@ -1783,7 +1786,7 @@ impl Card {
             if line.starts_with('(') && line.ends_with(')') {
                 continue; // skip reminder text
             }
-            let line = Regex::new(r" ?\(.*?\)").expect("failed to build parens regex").replace_all(line, "");
+            let line = PARENS_REGEX.replace_all(line, "");
             let mut is_keywords = true;
             let mut keywords = Vec::default();
             for line_part in line.split(&[',', ';', '\u{2014}'][..]).map(|s| s.trim()) {
