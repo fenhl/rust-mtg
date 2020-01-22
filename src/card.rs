@@ -218,6 +218,10 @@ impl Db {
 
         let set = if let Some(set) = set.as_object() { set } else { return Err(DbError::ParseSet { step: SetObject, set_code: None }); };
         let set_code = if let Some(code) = set.get("code").and_then(|code| code.as_str()) { code } else { return Err(DbError::ParseSet { step: SetCode, set_code: None }); };
+        match set_code {
+            "THP3" => { return Ok(()); } //HACK because THP3 is a "promo" set for some reason, not "memorabilia"
+            _ => {}
+        }
         match set.get("type").and_then(|set_type| set_type.as_str()) {
             Some("errata") => { return Ok(()); } // ignore errata sets //TODO apply errata according to set priorities
             Some("funny") => { return Ok(()); } // ignore funny sets even if the cards aren't silver-bordered (e.g. Heroes of the Realm) //TODO figure out a better way to do this to get black-bordered cards in unsets back (basics, Steamflogger Boss)
