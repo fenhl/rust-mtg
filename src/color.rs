@@ -8,6 +8,7 @@ use {
             HashSet
         },
         convert::TryFrom,
+        fmt,
         iter::FromIterator,
         ops::{
             BitOr,
@@ -61,6 +62,18 @@ impl FromStr for Color {
             "r" | "red" => Ok(Color::Red),
             "g" | "green" => Ok(Color::Green),
             _ => Err(())
+        }
+    }
+}
+
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Color::White => write!(f, "white"),
+            Color::Blue => write!(f, "blue"),
+            Color::Black => write!(f, "black"),
+            Color::Red => write!(f, "red"),
+            Color::Green => write!(f, "green")
         }
     }
 }
