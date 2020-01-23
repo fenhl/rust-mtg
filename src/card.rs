@@ -102,7 +102,7 @@ pub enum ParseStep {
     SetReleaseDate
 }
 
-/// The JSON was not a valid MTG JSON database.
+/// The JSON was not a valid MTG JSON 4 database.
 #[derive(Debug, From)]
 pub enum DbError {
     /// The MTG JSON download failed
@@ -175,7 +175,7 @@ impl Db {
         Ok(db)
     }
 
-    /// Creates a card database from a directory of MTG JSON set files.
+    /// Creates a card database from a directory of MTG JSON 4 set files.
     ///
     /// If `verbose` is true, a progress bar is shown on stderr.
     pub fn from_sets_dir<P: AsRef<Path>>(path: P, verbose: bool) -> Result<Db, DbError> {
@@ -1708,6 +1708,7 @@ enum CardData {
     RawJson { printings: Vec<Obj> },
     Parsed {
         color_identity: ColorSet,
+        color_indicator: Option<ColorSet>,
         colors: ColorSet,
         layout: Layout,
         loyalty: Option<Number>,
@@ -1849,17 +1850,25 @@ impl Card {
 
     /// If the card has a color indicator, returns it.
     ///
-    /// Since older versions of MTG JSON did not store color indicator information, this is computed from the card's mana cost and colors.
+    /// Since older versions of MTG JSON did not store color indicator information, this may return incorrect values if the database is MTG JSON 3 or older.
     pub fn color_indicator(&self) -> Option<ColorSet> {
-        //TODO read from MTG JSON if available
-        let actual_colors = self.colors();
-        if actual_colors != ColorSet::default() {
-            let intrinsic_colors = self.mana_cost().map(|cost| ColorSet::from(cost)).unwrap_or_default();
-            if actual_colors != intrinsic_colors {
-                return Some(actual_colors);
+        match *self.data.read().unwrap() {
+            CardData::RawJson { ref printings } => {
+                if printings[0].contains_key("colorIndicator") {
+                    Some(
+                        printings[0]["colorIndicator"]
+                            .as_array()
+                            .expect("colorIndicator field is not an array")
+                            .into_iter()
+                            .map(|color_str| color_str.as_str().expect("colorIndicator member is not a string").parse::<Color>().expect("colorIndicator member is not a color letter"))
+                            .collect()
+                    )
+                } else {
+                    None
+                }
             }
+            CardData::Parsed { color_indicator, .. } => color_indicator
         }
-        None
     }
 
     /// The card's colors. Not to be confused with the card's color identity.
@@ -2109,6 +2118,7 @@ impl Card {
         }
         let parsed = CardData::Parsed {
             color_identity: self.color_identity(),
+            color_indicator: self.color_indicator(),
             colors: self.colors(),
             layout: self.layout(),
             loyalty: self.loyalty(),
