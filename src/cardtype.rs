@@ -674,6 +674,8 @@ type_enum! {
         Food("Food"),
         /// Fortification
         Fortification("Fortification"),
+        /// Gold
+        Gold("Gold"),
         /// Treasure
         Treasure("Treasure"),
         /// Vehicle
@@ -777,6 +779,8 @@ type_enum! {
         Ashiok("Ashiok"),
         /// Bolas
         Bolas("Bolas"),
+        /// Calix
+        Calix("Calix"),
         /// Chandra
         Chandra("Chandra"),
         /// Dack
@@ -1042,6 +1046,8 @@ type_enum! {
         Cyclops("Cyclops"),
         /// Dauthi
         Dauthi("Dauthi"),
+        /// Demigod
+        Demigod("Demigod"),
         /// Demon
         Demon("Demon"),
         /// Deserter
@@ -1382,6 +1388,8 @@ type_enum! {
         Surrakar("Surrakar"),
         /// Survivor
         Survivor("Survivor"),
+        /// Tentacle
+        Tentacle("Tentacle"),
         /// Tetravite
         Tetravite("Tetravite"),
         /// Thalakos
