@@ -6,7 +6,6 @@ use {
         collections::HashSet,
         fmt,
         iter,
-        mem,
         ops::{
             BitOr,
             BitOrAssign
@@ -14,7 +13,8 @@ use {
         str::FromStr
     },
     derive_more::From,
-    itertools::Itertools as _,
+    enum_iterator::IntoEnumIterator,
+    itertools::Itertools,
     crate::color::{
         Color,
         ColorSet
@@ -450,10 +450,15 @@ impl<T: Into<TypeLine>> BitOrAssign<T> for TypeLine {
 
 macro_rules! type_enum {
     (#[$outer_doc:meta] pub enum $ty:ident { $(#[$doc:meta] $variant:ident($name:expr $(, $alt:pat)*)),* } part $part_id:ident) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        #[repr(u8)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, IntoEnumIterator)]
         #[$outer_doc]
         pub enum $ty { $(#[$doc] $variant),* }
+        impl $ty {
+            /// Returns an iterator over all variants of this enum.
+            pub fn iter_variants() -> impl Iterator<Item = Self> {
+                $ty::into_enum_iter()
+            }
+        }
         impl FromStr for $ty {
             type Err = ();
             fn from_str(s: &str) -> Result<$ty, ()> {
@@ -480,15 +485,19 @@ macro_rules! type_enum {
     };
     (#[$outer_doc:meta] pub enum $ty:ident { $(#[$doc:meta] $variant:ident($name:expr $(, $alt:pat)*)),* custom $(#[$custom_doc:meta] $custom_variant:ident($custom_name:expr $(, $custom_alt:pat)*)),* } part $part_id:ident) => {
         #[cfg(not(feature = "custom"))]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        #[repr(u8)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, IntoEnumIterator)]
         #[$outer_doc]
         pub enum $ty { $(#[$doc] $variant),* }
         #[cfg(feature = "custom")]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        #[repr(u8)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, IntoEnumIterator)]
         #[$outer_doc]
         pub enum $ty { $(#[$doc] $variant,)* $(#[$custom_doc] $custom_variant),* }
+        impl $ty {
+            /// Returns an iterator over all variants of this enum.
+            pub fn iter_variants() -> impl Iterator<Item = Self> {
+                $ty::into_enum_iter()
+            }
+        }
         impl FromStr for $ty {
             type Err = ();
             #[cfg(not(feature = "custom"))]
@@ -524,90 +533,6 @@ macro_rules! type_enum {
                     $part_id: part_iter.collect(),
                     ..TypeLine::default()
                 }
-            }
-        }
-    };
-    (#[$outer_doc:meta] pub enum $ty:ident { $(#[$doc:meta] $variant:ident($name:expr $(, $alt:pat)*)),* } part $part_id:ident iter $iter:ident) => {
-        type_enum! {
-            #[$outer_doc]
-            pub enum $ty { $(#[$doc] $variant($name $(, $alt)*)),* } part $part_id
-        }
-        impl $ty {
-            fn from_u8(i: u8) -> $ty {
-                assert!(i < $ty::total());
-                unsafe {
-                    mem::transmute(i)
-                }
-            }
-            /// Returns an iterate over all variants of this enum.
-            pub fn iter_variants() -> $iter {
-                $iter::default()
-            }
-            #[allow(unused)]
-            fn total() -> u8 {
-                0 $(+ { $ty::$variant; 1 })*
-            }
-        }
-        #[allow(missing_docs)]
-        #[derive(Default)]
-        pub struct $iter(Option<$ty>);
-        impl Iterator for $iter {
-            type Item = $ty;
-            fn next(&mut self) -> Option<$ty> {
-                self.0 = if let Some(v) = self.0 {
-                    if v as u8 == $ty::total() - 1 {
-                        None
-                    } else {
-                        Some($ty::from_u8(v as u8 + 1))
-                    }
-                } else {
-                    Some($ty::from_u8(0))
-                };
-                self.0
-            }
-        }
-    };
-    (#[$outer_doc:meta] pub enum $ty:ident { $(#[$doc:meta] $variant:ident($name:expr $(, $alt:pat)*)),* custom $(#[$custom_doc:meta] $custom_variant:ident($custom_name:expr $(, $custom_alt:pat)*)),* } part $part_id:ident iter $iter:ident) => {
-        type_enum! {
-            #[$outer_doc]
-            pub enum $ty { $(#[$doc] $variant($name $(, $alt)*)),* custom $(#[$custom_doc] $custom_variant($custom_name $(, $custom_alt)*)),* } part $part_id
-        }
-        impl $ty {
-            fn from_u8(i: u8) -> $ty {
-                assert!(i < $ty::total());
-                unsafe {
-                    mem::transmute(i)
-                }
-            }
-            fn iter_variants() -> $iter {
-                $iter::default()
-            }
-            #[allow(unused)]
-            #[cfg(not(feature = "custom"))]
-            fn total() -> u8 {
-                0 $(+ { $ty::$variant; 1 })*
-            }
-            #[allow(unused)]
-            #[cfg(feature = "custom")]
-            fn total() -> u8 {
-                0 $(+ { $ty::$variant; 1 })* $(+ { $ty::$custom_variant; 1 })*
-            }
-        }
-        #[derive(Default)]
-        struct $iter(Option<$ty>);
-        impl Iterator for $iter {
-            type Item = $ty;
-            fn next(&mut self) -> Option<$ty> {
-                self.0 = if let Some(v) = self.0 {
-                    if v as u8 == $ty::total() - 1 {
-                        None
-                    } else {
-                        Some($ty::from_u8(v as u8 + 1))
-                    }
-                } else {
-                    Some($ty::from_u8(0))
-                };
-                self.0
             }
         }
     };
@@ -658,7 +583,7 @@ type_enum! {
         Snow("Snow"),
         /// World
         World("World")
-    } part supertypes iter SupertypeIter
+    } part supertypes
 }
 
 type_enum! {
@@ -693,7 +618,7 @@ type_enum! {
         Relic("Relic"),
         /// Structure
         Structure("Structure")
-    } part artifact_types iter ArtifactTypeIter
+    } part artifact_types
 }
 
 type_enum! {
@@ -716,7 +641,7 @@ type_enum! {
         Cloister("Cloister"),
         /// Discovery
         Discovery("Discovery")
-    } part enchantment_types iter EnchantmentTypeIter
+    } part enchantment_types
 }
 
 type_enum! {
@@ -748,7 +673,7 @@ type_enum! {
         Tower("Tower"),
         /// Urza's
         Urzas("Urza's", "Urza\u{2019}s")
-    } part land_types iter LandTypeIter
+    } part land_types
 }
 
 /// Converts a color to the corresponding basic land type.
@@ -821,6 +746,8 @@ type_enum! {
         Koth("Koth"),
         /// Liliana
         Liliana("Liliana"),
+        /// Lukka
+        Lukka("Lukka"),
         /// Nahiri
         Nahiri("Nahiri"),
         /// Narset
@@ -936,7 +863,7 @@ type_enum! {
         Wulani("Wulani"),
         /// Yemma
         Yemma("Yemma")
-    } part planeswalker_types iter PlaneswalkerTypeIter
+    } part planeswalker_types
 }
 
 type_enum! {
@@ -948,7 +875,7 @@ type_enum! {
         Arcane("Arcane"),
         /// Trap
         Trap("Trap")
-    } part spell_types iter SpellTypeIter
+    } part spell_types
 }
 
 type_enum! {
@@ -1262,6 +1189,8 @@ type_enum! {
         Orc("Orc"),
         /// Orgg
         Orgg("Orgg"),
+        /// Otter
+        Otter("Otter"),
         /// Ouphe
         Ouphe("Ouphe"),
         /// Ox
@@ -1342,6 +1271,8 @@ type_enum! {
         Shaman("Shaman"),
         /// Shapeshifter
         Shapeshifter("Shapeshifter"),
+        /// Shark
+        Shark("Shark"),
         /// Sheep
         Sheep("Sheep"),
         /// Siren
@@ -1561,7 +1492,7 @@ type_enum! {
         Xerex("Xerex"),
         /// Zendikar
         Zendikar("Zendikar")
-    } part planar_types iter PlanarTypeIter
+    } part planar_types
 }
 
 /// A subtype of any card type.
