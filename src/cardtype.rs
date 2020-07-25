@@ -702,6 +702,8 @@ type_enum! {
         Arlinn("Arlinn"),
         /// Ashiok
         Ashiok("Ashiok"),
+        /// Basri
+        Basri("Basri"),
         /// Bolas
         Bolas("Bolas"),
         /// Calix
@@ -985,6 +987,8 @@ type_enum! {
         Dinosaur("Dinosaur"),
         /// Djinn
         Djinn("Djinn"),
+        /// Dog
+        Dog("Dog"),
         /// Dragon
         Dragon("Dragon"),
         /// Drake
@@ -1073,8 +1077,6 @@ type_enum! {
         Horror("Horror"),
         /// Horse
         Horse("Horse"),
-        /// Hound
-        Hound("Hound"),
         /// Human
         Human("Human"),
         /// Hydra
@@ -1394,6 +1396,9 @@ type_enum! {
         Farmer("Farmer"),
         /// Giraffe
         Giraffe("Giraffe"),
+        //TODO remove once all custom sets are updated
+        /// Hound
+        Hound("Hound"),
         /// Mech
         Mech("Mech"),
         /// Nanobot
