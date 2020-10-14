@@ -217,6 +217,16 @@ impl Db {
         use crate::card::ParseStep::*;
 
         let set = if let Some(set) = set.as_object() { set } else { return Err(DbError::ParseSet { step: SetObject, set_code: None }); };
+        // flatten MTG JSON 5 set files to MTG JSON 4-style for now, should fix on the async-json branch
+        let set = if let Some(data) = set.get("data").and_then(|data| data.as_object()) {
+            let mut flattened = data.clone();
+            if let Some(meta) = set.get("meta") {
+                flattened.insert(format!("meta"), meta.clone());
+            }
+            flattened
+        } else {
+            set.clone()
+        };
         let set_code = if let Some(code) = set.get("code").and_then(|code| code.as_str()) { code } else { return Err(DbError::ParseSet { step: SetCode, set_code: None }); };
         match set_code {
             "THP3" => { return Ok(()); } //HACK because THP3 is a "promo" set for some reason, not "memorabilia"

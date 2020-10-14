@@ -8,11 +8,11 @@ edition = "2018"
 custom = []
 
 [dependencies]
-caseless = "0.2.1"
+caseless = "0.2"
 derive_more = "0.99"
 enum-iterator = "0.6"
 itertools = "0.8"
-lazy_static = "1.0.2"
+lazy_static = "1"
 num = "0.2"
 regex = "1"
 reqwest = "0.9" #TODO add async support and update to 0.10
